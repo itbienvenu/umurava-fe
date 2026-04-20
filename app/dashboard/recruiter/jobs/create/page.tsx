@@ -3,23 +3,20 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { authFetch } from "@/lib/auth";
+import { ApiError } from "@/lib/apiError";
 
-interface ParsedJob {
-  acknowledged: boolean;
-  insertedId: string;
-}
+
 
 export default function CreateJobPage() {
   const router = useRouter();
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [parsed, setParsed] = useState<ParsedJob | null>(null);
+
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
-    setParsed(null);
     setLoading(true);
 
     try {
@@ -30,28 +27,16 @@ export default function CreateJobPage() {
           body: JSON.stringify({ description }),
         }
       );
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        setError(data.message || "Failed to create job.");
-        return;
-      }
+      const data = await ApiError.handle(res) as { data: { insertedId: string } };
 
       // Redirect straight to the job detail page
       router.push(`/dashboard/recruiter/jobs/${data.data.insertedId}`);
-    } catch {
-      setError("Internal server error. Please try again.");
+    } catch (err) {
+      if (err instanceof ApiError) setError(err.message);
+      else setError("Internal server error. Please try again.");
     } finally {
       setLoading(false);
     }
-  }
-
-  function handleGoToJob() {
-    if (parsed) router.push(`/dashboard/recruiter/jobs/${parsed.insertedId}`);
-  }
-
-  function handleGoToJobs() {
-    router.push("/dashboard/recruiter/jobs");
   }
 
   return (

@@ -24,7 +24,7 @@ export default function AccountPage() {
       <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6 flex flex-col gap-4 mb-4">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-full bg-[#102C26] flex items-center justify-center text-[#F7E7CE] text-xl font-bold">
-            {user?.name?.charAt(0).toUpperCase()}
+            {user?.name?.charAt(0)?.toUpperCase() ?? ""}
           </div>
           <div>
             <p className="font-semibold text-[#102C26]">{user?.name}</p>

@@ -159,7 +159,7 @@ export default function RecruiterLayout({ children }: { children: React.ReactNod
         <div className="px-4 py-4 border-t border-[#1a4a3a]">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-8 h-8 rounded-full bg-[#F7E7CE]/20 flex items-center justify-center text-sm font-bold">
-              {user.name.charAt(0).toUpperCase()}
+              {user?.name?.charAt(0)?.toUpperCase() ?? ""}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{user.name}</p>

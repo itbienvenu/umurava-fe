@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { authFetch } from "@/lib/auth";
 import { ApiError } from "@/lib/apiError";
 
@@ -38,14 +38,31 @@ const STATUS_STYLES: Record<string, string> = {
   archived:  "bg-gray-100 text-gray-500",
 };
 
+const INPUT_CLASS = "border border-[#e8d0b0] rounded-lg px-4 py-3 text-sm text-[#102C26] bg-white placeholder-[#8aada6] focus:outline-none focus:ring-2 focus:ring-[#102C26] focus:border-transparent w-full disabled:bg-[#f5f5f5] disabled:text-[#aaa] disabled:cursor-not-allowed";
+const LABEL_CLASS = "text-sm font-medium text-[#102C26] mb-1 block";
+
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const defaultTab = initialTab && TABS.map(t => t.toLowerCase()).includes(initialTab.toLowerCase())
+    ? TABS.find(t => t.toLowerCase() === initialTab.toLowerCase()) as Tab
+    : "Details";
 
   const [job, setJob] = useState<Job | null>(null);
   const [fetching, setFetching] = useState(true);
   const [fetchError, setFetchError] = useState("");
-  const [activeTab, setActiveTab] = useState<Tab>("Details");
+  const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (params.get("tab") !== activeTab.toLowerCase()) {
+      params.set("tab", activeTab.toLowerCase());
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  }, [activeTab, pathname, router, searchParams]);
 
   // Editable fields
   const [title, setTitle] = useState("");
@@ -143,7 +160,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
     try {
       await tryEndpoint(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/jobs/${id}/${action}`);
-      setJob((prev) => prev ? { ...prev, metadata: { ...prev.metadata!, status: statusMap[action] } } : prev);
+      setJob((prev) => prev ? { ...prev, metadata: { ...(prev.metadata ?? {}), status: statusMap[action] } } : prev);
       notify(msgMap[action]);
     } catch (err) {
       notify((err as ApiError).message, "error");
@@ -152,8 +169,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     }
   }
 
-  const inputClass = "border border-[#e8d0b0] rounded-lg px-4 py-3 text-sm text-[#102C26] bg-white placeholder-[#8aada6] focus:outline-none focus:ring-2 focus:ring-[#102C26] focus:border-transparent w-full disabled:bg-[#f5f5f5] disabled:text-[#aaa] disabled:cursor-not-allowed";
-  const labelClass = "text-sm font-medium text-[#102C26] mb-1 block";
+
 
   if (fetching) return <div className="flex items-center justify-center py-24 text-[#6b8f85]">Loading job...</div>;
   if (fetchError) return <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">{fetchError}</div>;
@@ -239,13 +255,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6 flex flex-col gap-4">
             <h2 className="font-semibold text-[#102C26]">Basic Info</h2>
             <div>
-              <label className={labelClass}>Job Title</label>
-              <input disabled={!canEdit} value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />
+              <label className={LABEL_CLASS}>Job Title</label>
+              <input disabled={!canEdit} value={title} onChange={(e) => setTitle(e.target.value)} className={INPUT_CLASS} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelClass}>Employment Type</label>
-                <select disabled={!canEdit} value={employmentType} onChange={(e) => setEmploymentType(e.target.value)} className={inputClass}>
+                <label className={LABEL_CLASS}>Employment Type</label>
+                <select disabled={!canEdit} value={employmentType} onChange={(e) => setEmploymentType(e.target.value)} className={INPUT_CLASS}>
                   <option value="full_time">Full Time</option>
                   <option value="part_time">Part Time</option>
                   <option value="contract">Contract</option>
@@ -254,8 +270,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 </select>
               </div>
               <div>
-                <label className={labelClass}>Seniority Level</label>
-                <select disabled={!canEdit} value={seniorityLevel} onChange={(e) => setSeniorityLevel(e.target.value)} className={inputClass}>
+                <label className={LABEL_CLASS}>Seniority Level</label>
+                <select disabled={!canEdit} value={seniorityLevel} onChange={(e) => setSeniorityLevel(e.target.value)} className={INPUT_CLASS}>
                   <option value="junior">Junior</option>
                   <option value="mid">Mid</option>
                   <option value="senior">Senior</option>
@@ -265,12 +281,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               </div>
             </div>
             <div>
-              <label className={labelClass}>Min. Years of Experience</label>
-              <input disabled={!canEdit} type="number" min={0} value={minYears} onChange={(e) => setMinYears(e.target.value)} className={inputClass} />
+              <label className={LABEL_CLASS}>Min. Years of Experience</label>
+              <input disabled={!canEdit} type="number" min={0} value={minYears} onChange={(e) => setMinYears(e.target.value)} className={INPUT_CLASS} />
             </div>
             <div>
-              <label className={labelClass}>Languages</label>
-              <input disabled={!canEdit} value={languages} onChange={(e) => setLanguages(e.target.value)} placeholder="English, French" className={inputClass} />
+              <label className={LABEL_CLASS}>Languages</label>
+              <input disabled={!canEdit} value={languages} onChange={(e) => setLanguages(e.target.value)} placeholder="English, French" className={INPUT_CLASS} />
               <p className="text-xs text-[#6b8f85] mt-1">Comma separated</p>
             </div>
           </div>
@@ -279,8 +295,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6 flex flex-col gap-4">
             <h2 className="font-semibold text-[#102C26]">Description</h2>
             <div>
-              <label className={labelClass}>Summary</label>
-              <textarea disabled={!canEdit} rows={4} value={summary} onChange={(e) => setSummary(e.target.value)} className={inputClass + " resize-none"} />
+              <label className={LABEL_CLASS}>Summary</label>
+              <textarea disabled={!canEdit} rows={4} value={summary} onChange={(e) => setSummary(e.target.value)} className={INPUT_CLASS + " resize-none"} />
             </div>
           </div>
 
@@ -288,10 +304,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6 flex flex-col gap-4">
             <h2 className="font-semibold text-[#102C26]">Responsibilities</h2>
             <div>
-              <label className={labelClass}>One per line</label>
+              <label className={LABEL_CLASS}>One per line</label>
               <textarea disabled={!canEdit} rows={5} value={responsibilities} onChange={(e) => setResponsibilities(e.target.value)}
                 placeholder={"Build annotation tools\nWrite unit tests\nCollaborate with ML team"}
-                className={inputClass + " resize-none"} />
+                className={INPUT_CLASS + " resize-none"} />
             </div>
           </div>
 

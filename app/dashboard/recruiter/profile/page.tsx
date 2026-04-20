@@ -38,11 +38,12 @@ export default function CompanyProfilePage() {
       setFetching(false);
       return;
     }
+    setError("");
     authFetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/recruiters/profile`)
-      .then((r) => r.json())
+      .then((r) => ApiError.handle(r))
       .then((data) => {
-        if (data.success && data.data?.profile) {
-          const p = data.data.profile;
+        const p = (data as any).data?.profile;
+        if (p) {
           setForm({
             company_name: p.company_name ?? "",
             industry: p.industry ?? "",
@@ -57,13 +58,22 @@ export default function CompanyProfilePage() {
           });
         }
       })
-      .catch(() => {})
+      .catch((err: ApiError) => {
+        setError(err.message || "Failed to load profile.");
+      })
       .finally(() => setFetching(false));
   }, []);
 
   function set(field: keyof ProfileForm, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
-    setFieldErrors((e) => { const n = { ...e }; delete n[field]; return n; });
+    setFieldErrors((e) => {
+      const n = { ...e };
+      delete n[field];
+      // Also clear nested error keys
+      if (["city", "country", "address"].includes(field)) delete n[`location.${field}`];
+      if (["linkedin", "twitter"].includes(field)) delete n[`social_links.${field}`];
+      return n;
+    });
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -145,18 +155,21 @@ export default function CompanyProfilePage() {
             <label className={labelClass}>Industry *</label>
             <input required value={form.industry} onChange={(e) => set("industry", e.target.value)}
               placeholder="Healthcare Logistics" className={inputClass} />
+            {fieldErrors["industry"] && <p className="text-red-500 text-xs mt-1">{fieldErrors["industry"]}</p>}
           </div>
 
           <div>
             <label className={labelClass}>Website</label>
             <input type="url" value={form.website} onChange={(e) => set("website", e.target.value)}
               placeholder="https://yourcompany.com" className={inputClass} />
+            {fieldErrors["website"] && <p className="text-red-500 text-xs mt-1">{fieldErrors["website"]}</p>}
           </div>
 
           <div>
             <label className={labelClass}>Company Logo URL</label>
             <input type="url" value={form.company_logo} onChange={(e) => set("company_logo", e.target.value)}
               placeholder="https://cdn.example.com/logo.png" className={inputClass} />
+            {fieldErrors["company_logo"] && <p className="text-red-500 text-xs mt-1">{fieldErrors["company_logo"]}</p>}
           </div>
 
           <div>
@@ -164,6 +177,7 @@ export default function CompanyProfilePage() {
             <textarea rows={3} value={form.bio} onChange={(e) => set("bio", e.target.value)}
               placeholder="Tell candidates about your company..."
               className={inputClass + " resize-none"} />
+            {fieldErrors["bio"] && <p className="text-red-500 text-xs mt-1">{fieldErrors["bio"]}</p>}
           </div>
         </div>
 
@@ -175,6 +189,7 @@ export default function CompanyProfilePage() {
             <label className={labelClass}>Address</label>
             <input value={form.address} onChange={(e) => set("address", e.target.value)}
               placeholder="KG 123 St" className={inputClass} />
+            {fieldErrors["location.address"] && <p className="text-red-500 text-xs mt-1">{fieldErrors["location.address"]}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -201,12 +216,14 @@ export default function CompanyProfilePage() {
             <label className={labelClass}>LinkedIn</label>
             <input type="url" value={form.linkedin} onChange={(e) => set("linkedin", e.target.value)}
               placeholder="https://linkedin.com/company/yourcompany" className={inputClass} />
+            {fieldErrors["social_links.linkedin"] && <p className="text-red-500 text-xs mt-1">{fieldErrors["social_links.linkedin"]}</p>}
           </div>
 
           <div>
             <label className={labelClass}>Twitter / X</label>
             <input type="url" value={form.twitter} onChange={(e) => set("twitter", e.target.value)}
               placeholder="https://twitter.com/yourcompany" className={inputClass} />
+            {fieldErrors["social_links.twitter"] && <p className="text-red-500 text-xs mt-1">{fieldErrors["social_links.twitter"]}</p>}
           </div>
         </div>
 

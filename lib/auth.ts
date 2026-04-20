@@ -41,8 +41,8 @@ export function normalizeRole(role: string): string {
 }
 
 /** Check if user has a specific role (case-insensitive) */
-export function hasRole(user: { role: string } | null, expectedRole: string): boolean {
-  if (!user) return false;
+export function hasRole(user: { role?: string } | null, expectedRole: string): boolean {
+  if (!user || typeof user.role !== "string") return false;
   return normalizeRole(user.role) === normalizeRole(expectedRole);
 }
 
@@ -76,12 +76,17 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}): Pro
   const { accessToken } = getTokens();
 
   const makeRequest = (token: string | null) => {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      // caller headers first, then auth overrides (so Authorization is always set)
-      ...((init.headers as Record<string, string>) ?? {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
+    const headers = new Headers(init.headers);
+
+    // Default to JSON if no content type is provided and body isn't FormData
+    if (!headers.has("Content-Type") && !(init.body instanceof FormData)) {
+      headers.set("Content-Type", "application/json");
+    }
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
     return fetch(input, { ...init, headers });
   };
 

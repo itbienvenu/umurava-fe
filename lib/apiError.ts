@@ -1,17 +1,14 @@
-/**
- * Shared API error handler.
- * Parses the response and returns a human-readable message
- * based on status code — consistent across all pages.
- */
-export class ApiError {
-  message: string;
+
+export class ApiError extends Error {
   status: number;
   fieldErrors: Record<string, string>;
 
   constructor(message: string, status: number = 0, fieldErrors: Record<string, string> = {}) {
-    this.message = message;
+    super(message);
+    this.name = "ApiError";
     this.status = status;
     this.fieldErrors = fieldErrors;
+    Object.setPrototypeOf(this, ApiError.prototype);
   }
 
   static fromStatus(status: number, serverMessage?: string): ApiError {
@@ -29,12 +26,17 @@ export class ApiError {
 
   /** Parse a fetch Response and throw an ApiError if not successful */
   static async handle(res: Response): Promise<unknown> {
-    const data = await res.json();
+    let data: any;
+    try {
+      data = await res.json();
+    } catch {
+      if (!res.ok) throw ApiError.fromStatus(res.status);
+      throw new ApiError("Invalid response format from server.", res.status);
+    }
 
     if (!res.ok || !data.success) {
       const err = ApiError.fromStatus(res.status, data.message);
 
-      // Attach field-level errors if present (400 validation)
       if (data.errors && Array.isArray(data.errors)) {
         for (const e of data.errors) {
           err.fieldErrors[e.field] = e.message;
