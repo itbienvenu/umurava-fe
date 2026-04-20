@@ -63,7 +63,6 @@ export async function refreshAccessToken(): Promise<string | null> {
       saveTokens(data.data.accessToken);
       return data.data.accessToken;
     }
-    // refresh token invalid/expired — force logout
     clearTokens();
     return null;
   } catch {
@@ -71,14 +70,12 @@ export async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
-/** Fetch wrapper that auto-retries once with a refreshed token on 401. */
 export async function authFetch(input: RequestInfo, init: RequestInit = {}): Promise<Response> {
   const { accessToken } = getTokens();
 
   const makeRequest = (token: string | null) => {
     const headers = new Headers(init.headers);
 
-    // Default to JSON if no content type is provided and body isn't FormData
     if (!headers.has("Content-Type") && !(init.body instanceof FormData)) {
       headers.set("Content-Type", "application/json");
     }
