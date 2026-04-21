@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getUser, clearTokens } from "@/lib/auth";
+import { getUser, clearTokens, hasRole } from "@/lib/auth";
 
 export default function ApplicantDashboard() {
   const router = useRouter();
@@ -11,7 +11,7 @@ export default function ApplicantDashboard() {
   useEffect(() => {
     const u = getUser();
     if (!u) { router.replace("/login"); return; }
-    if (u.role !== "applicant") { router.replace("/login"); return; }
+    if (!hasRole(u, "applicant")) { router.replace("/login"); return; }
     setUser(u);
   }, [router]);
 

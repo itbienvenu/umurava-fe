@@ -1,83 +1,37 @@
-'use client'
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getUser, clearTokens } from "@/lib/auth";
-
 export default function RecruiterDashboard() {
-  const router = useRouter();
-  const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
-
-  useEffect(() => {
-    const u = getUser();
-    if (!u) { router.replace("/login"); return; }
-    if (u.role !== "recruiter") { router.replace("/login"); return; }
-    setUser(u);
-  }, [router]);
-
-  function handleLogout() {
-    clearTokens();
-    router.push("/login");
-  }
-
-  if (!user) return null;
-
   return (
-    <div className="min-h-screen flex flex-col bg-[#F7E7CE] font-sans">
-      {/* Navbar */}
-      <header className="flex items-center justify-between px-10 py-4 bg-[#102C26] text-[#F7E7CE]">
-        <span className="font-bold text-xl tracking-tight">🍎 AppleOfEve</span>
-        <div className="flex items-center gap-4">
-          <span className="text-sm opacity-80">Hi, {user.name}</span>
-          <button
-            onClick={handleLogout}
-            className="text-sm border border-[#F7E7CE] px-4 py-1.5 rounded-full hover:bg-[#1a4a3a] transition-colors"
+    <div>
+      <h1 className="text-2xl font-bold text-[#102C26] mb-6">Dashboard Overview</h1>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {[
+          { label: "Total Jobs", value: "0", icon: "💼" },
+          { label: "Pending Applications", value: "0", icon: "📋" },
+          { label: "Shortlisted", value: "0", icon: "⭐" },
+          { label: "Hired", value: "0", icon: "✅" },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="bg-white rounded-2xl border border-[#e8d0b0] p-6 flex items-center gap-4"
           >
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <main className="flex-1 px-10 py-10">
-        {/* Welcome banner */}
-        <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 mb-8">
-          <h1 className="text-2xl font-bold text-[#102C26] mb-1">
-            Welcome back, {user.name} 👋
-          </h1>
-          <p className="text-[#6b8f85] text-sm">
-            Manage your job postings and find the right talent today.
-          </p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          {[
-            { label: "Active Job Posts", value: "0" },
-            { label: "Total Applicants", value: "0" },
-            { label: "Interviews Pending", value: "0" },
-          ].map((s) => (
-            <div
-              key={s.label}
-              className="bg-white rounded-2xl border border-[#e8d0b0] p-6 flex flex-col gap-1"
-            >
-              <span className="text-3xl font-bold text-[#102C26]">{s.value}</span>
-              <span className="text-sm text-[#6b8f85]">{s.label}</span>
+            <span className="text-3xl">{s.icon}</span>
+            <div>
+              <p className="text-3xl font-bold text-[#102C26]">{s.value}</p>
+              <p className="text-sm text-[#6b8f85]">{s.label}</p>
             </div>
-          ))}
-        </div>
-
-        {/* Job postings placeholder */}
-        <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8">
-          <h2 className="text-lg font-semibold text-[#102C26] mb-4">Your Job Postings</h2>
-          <div className="flex flex-col items-center justify-center py-12 text-[#6b8f85]">
-            <span className="text-4xl mb-3">📝</span>
-            <p className="text-sm">No job posts yet. Create your first listing!</p>
-            <button className="mt-4 bg-[#102C26] text-[#F7E7CE] px-6 py-2 rounded-full text-sm font-medium hover:bg-[#1a4a3a] transition-colors">
-              Post a Job
-            </button>
           </div>
+        ))}
+      </div>
+
+      {/* Recent activity */}
+      <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6">
+        <h2 className="text-lg font-semibold text-[#102C26] mb-4">Recent Activity</h2>
+        <div className="flex flex-col items-center justify-center py-12 text-[#6b8f85]">
+          <span className="text-4xl mb-3">📊</span>
+          <p className="text-sm">No recent activity. Start by creating a job post!</p>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

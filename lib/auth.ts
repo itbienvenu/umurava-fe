@@ -3,8 +3,8 @@ const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
 export function getTokens() {
   if (typeof window === "undefined") return { accessToken: null, refreshToken: null };
   return {
-    accessToken: localStorage.getItem("accessToken"),
-    refreshToken: localStorage.getItem("refreshToken"),
+    accessToken: localStorage.getItem("accessToken") || null,
+    refreshToken: localStorage.getItem("refreshToken") || null,
   };
 }
 
@@ -27,7 +27,23 @@ export function getUser(): { _id: string; name: string; email: string; role: str
 }
 
 export function saveUser(user: object) {
-  localStorage.setItem("user", JSON.stringify(user));
+  // Normalize role to lowercase before saving
+  const normalized = { ...(user as Record<string, unknown>) };
+  if (typeof normalized.role === "string") {
+    normalized.role = normalized.role.toLowerCase().trim();
+  }
+  localStorage.setItem("user", JSON.stringify(normalized));
+}
+
+/** Normalize role for comparison (lowercase, trim whitespace) */
+export function normalizeRole(role: string): string {
+  return role.toLowerCase().trim();
+}
+
+/** Check if user has a specific role (case-insensitive) */
+export function hasRole(user: { role?: string } | null, expectedRole: string): boolean {
+  if (!user || typeof user.role !== "string") return false;
+  return normalizeRole(user.role) === normalizeRole(expectedRole);
 }
 
 /** Calls /api/v1/auth/refresh and updates the stored accessToken.
@@ -47,7 +63,6 @@ export async function refreshAccessToken(): Promise<string | null> {
       saveTokens(data.data.accessToken);
       return data.data.accessToken;
     }
-    // refresh token invalid/expired — force logout
     clearTokens();
     return null;
   } catch {
@@ -55,19 +70,22 @@ export async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
-/** Fetch wrapper that auto-retries once with a refreshed token on 401. */
 export async function authFetch(input: RequestInfo, init: RequestInit = {}): Promise<Response> {
   const { accessToken } = getTokens();
 
-  const makeRequest = (token: string | null) =>
-    fetch(input, {
-      ...init,
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(init.headers ?? {}),
-      },
-    });
+  const makeRequest = (token: string | null) => {
+    const headers = new Headers(init.headers);
+
+    if (!headers.has("Content-Type") && !(init.body instanceof FormData)) {
+      headers.set("Content-Type", "application/json");
+    }
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    return fetch(input, { ...init, headers });
+  };
 
   let res = await makeRequest(accessToken);
 
