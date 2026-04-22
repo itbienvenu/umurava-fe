@@ -4,12 +4,24 @@ import { useState, useEffect, use } from "react";
 import { getApplicationById } from "@/lib/applications";
 import Link from "next/link";
 import { Application } from "@/types/application";
+import { 
+  ChartBar, 
+  Sparkle, 
+  MagnifyingGlass, 
+  WarningCircle, 
+  Buildings, 
+  CaretRight,
+  ArrowLeft,
+  ClipboardText,
+  CircleNotch
+} from "@phosphor-icons/react";
 
 export default function ApplicationDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [application, setApplication] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     async function fetchDetails() {
@@ -30,8 +42,9 @@ export default function ApplicationDetailsPage({ params }: { params: Promise<{ i
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#102C26]"></div>
+      <div className="flex justify-center items-center h-[60vh] relative">
+        <ClipboardText size={48} weight="duotone" className="animate-pulse text-[#102C26] opacity-20 absolute" />
+        <CircleNotch size={56} className="animate-spin text-[#102C26]" />
       </div>
     );
   }
@@ -39,8 +52,8 @@ export default function ApplicationDetailsPage({ params }: { params: Promise<{ i
   if (error || !application) {
     return (
       <div className="max-w-4xl mx-auto py-12 px-4 shadow-sm">
-        <div className="bg-white border border-[#e8d0b0] p-12 rounded-3xl text-center">
-          <div className="text-4xl mb-4">⚠️</div>
+        <div className="bg-white border border-[#e8d0b0] p-12 rounded-3xl text-center flex flex-col items-center">
+          <WarningCircle size={48} className="text-amber-500 mb-4" />
           <h2 className="text-2xl font-bold text-[#102C26] mb-2">Application Not Found</h2>
           <p className="text-[#6b8f85] mb-8">{error || "The application you are looking for does not exist."}</p>
           <Link href="/dashboard/applicant/applications" className="bg-[#102C26] text-[#F7E7CE] px-8 py-3 rounded-full font-bold">
@@ -53,6 +66,9 @@ export default function ApplicationDetailsPage({ params }: { params: Promise<{ i
 
   const { screening_result } = application;
   const breakdown = screening_result?.dimension_breakdown || {};
+
+  const maxLength = 300;
+  const showReadMore = application.coverLetter && application.coverLetter.length > maxLength;
 
   return (
     <div className="max-w-5xl mx-auto pb-20">
@@ -120,7 +136,9 @@ export default function ApplicationDetailsPage({ params }: { params: Promise<{ i
           {/* AI Breakdown */}
           <section className="bg-white rounded-[2rem] border border-[#e8d0b0] p-8 shadow-sm">
             <h2 className="text-xl font-bold text-[#102C26] mb-8 flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-[#F7E7CE] flex items-center justify-center text-sm">📊</span>
+              <div className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center">
+                <ChartBar size={20} weight="duotone" className="text-[#102C26]" />
+              </div>
               Dimensions Breakdown
             </h2>
             
@@ -146,7 +164,9 @@ export default function ApplicationDetailsPage({ params }: { params: Promise<{ i
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
              <section className="bg-green-50/50 rounded-[2rem] border border-green-100 p-8 shadow-sm">
                 <h3 className="text-sm font-bold text-green-800 uppercase tracking-widest mb-6 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs">💪</span>
+                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                    <Sparkle size={18} weight="duotone" />
+                  </div>
                   Key Strengths
                 </h3>
                 <ul className="space-y-4">
@@ -161,7 +181,9 @@ export default function ApplicationDetailsPage({ params }: { params: Promise<{ i
 
              <section className="bg-red-50/50 rounded-[2rem] border border-red-100 p-8 shadow-sm">
                 <h3 className="text-sm font-bold text-red-800 uppercase tracking-widest mb-6 flex items-center gap-2">
-                   <span className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center text-xs">🔍</span>
+                   <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                    <MagnifyingGlass size={18} weight="duotone" />
+                   </div>
                    Identified Gaps
                 </h3>
                 <ul className="space-y-4">
@@ -180,16 +202,34 @@ export default function ApplicationDetailsPage({ params }: { params: Promise<{ i
         <div className="space-y-8">
            <section className="bg-[#102C26] rounded-[2rem] p-8 text-[#F7E7CE] shadow-xl">
               <h2 className="text-lg font-bold mb-6 italic underline decoration-[#F7E7CE]/30 underline-offset-8">Cover Letter Snapshot</h2>
-              <p className="text-sm leading-relaxed opacity-90 font-light whitespace-pre-wrap">
-                {application.coverLetter || "You did not include a cover letter with this application."}
-              </p>
+              <div className="space-y-4">
+                <p className="text-sm leading-relaxed opacity-90 font-light whitespace-pre-wrap">
+                  {!application.coverLetter 
+                    ? "You did not include a cover letter with this application." 
+                    : isExpanded 
+                      ? application.coverLetter 
+                      : `${application.coverLetter.substring(0, maxLength)}${showReadMore ? '...' : ''}`
+                  }
+                </p>
+                {showReadMore && (
+                  <button 
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="text-[10px] font-bold uppercase tracking-widest text-[#F7E7CE] hover:text-white transition-colors bg-[#F7E7CE]/10 px-3 py-1 rounded-full border border-[#F7E7CE]/20"
+                  >
+                    {isExpanded ? "Read Less" : "Read More"}
+                  </button>
+                )}
+              </div>
            </section>
+
 
            <section className="bg-white rounded-[2rem] border border-[#e8d0b0] p-8 shadow-sm">
               <h2 className="text-lg font-bold text-[#102C26] mb-6">Original Job Posting</h2>
               <div className="space-y-4">
                  <div className="flex gap-4">
-                    <div className="w-12 h-12 bg-[#F7E7CE] rounded-xl flex items-center justify-center text-xl shrink-0">🏢</div>
+                    <div className="w-12 h-12 bg-[#F7E7CE] rounded-xl flex items-center justify-center shrink-0">
+                      <Buildings size={24} weight="duotone" className="text-[#102C26]" />
+                    </div>
                     <div>
                        <p className="font-bold text-[#102C26] leading-tight">{application.job.title}</p>
                        <p className="text-xs text-[#6b8f85] mt-1">{application.job.seniority_level?.toUpperCase() ?? 'N/A'} • {application.job.employment_type?.replaceAll('_', ' ').toUpperCase() ?? 'N/A'}</p>

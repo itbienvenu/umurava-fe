@@ -5,6 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authFetch } from "@/lib/auth";
 import { ApiError } from "@/lib/apiError";
+import { 
+  Plus, 
+  Briefcase, 
+  PencilSimple, 
+  Eye, 
+  Trash, 
+  CircleNotch,
+  WarningCircle
+} from "@phosphor-icons/react";
 
 interface Job {
   _id: string;
@@ -58,7 +67,10 @@ export default function MyJobsPage() {
   const filtered = filter === "all" ? jobs : jobs.filter((j) => j.metadata?.status === filter);
 
   if (fetching) return (
-    <div className="flex items-center justify-center py-24 text-[#6b8f85]">Loading jobs...</div>
+    <div className="flex flex-col items-center justify-center py-24 text-[#6b8f85]">
+      <CircleNotch size={48} className="animate-spin mb-4" />
+      <p className="text-sm">Loading jobs...</p>
+    </div>
   );
 
   return (
@@ -68,14 +80,16 @@ export default function MyJobsPage() {
         <h1 className="text-2xl font-bold text-[#102C26]">My Jobs</h1>
         <Link
           href="/dashboard/recruiter/jobs/create"
-          className="bg-[#102C26] text-[#F7E7CE] px-5 py-2.5 rounded-full text-sm font-medium hover:bg-[#1a4a3a] transition-colors"
+          className="bg-[#102C26] text-[#F7E7CE] px-5 py-2.5 rounded-full text-sm font-medium hover:bg-[#1a4a3a] transition-colors flex items-center gap-2"
         >
-          + Create Job
+          <Plus size={18} weight="bold" />
+          Create Job
         </Link>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
+          <WarningCircle size={18} />
           {error}
         </div>
       )}
@@ -101,16 +115,17 @@ export default function MyJobsPage() {
 
       {/* Empty state */}
       {filtered.length === 0 && (
-        <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 flex flex-col items-center justify-center py-16 text-[#6b8f85]">
-          <span className="text-4xl mb-3">💼</span>
-          <p className="text-sm mb-4">
-            {filter === "all" ? "No jobs posted yet." : `No ${filter} jobs.`}
+        <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 flex flex-col items-center justify-center py-16 text-[#6b8f85] text-center">
+          <Briefcase size={48} weight="duotone" className="mb-4 opacity-30" />
+          <p className="text-sm mb-6 max-w-[240px]">
+            {filter === "all" ? "No jobs posted yet. Start reaching top talent today!" : `No ${filter} jobs found in your repository.`}
           </p>
           {filter === "all" && (
             <Link
               href="/dashboard/recruiter/jobs/create"
-              className="bg-[#102C26] text-[#F7E7CE] px-6 py-2 rounded-full text-sm font-medium hover:bg-[#1a4a3a] transition-colors"
+              className="bg-[#102C26] text-[#F7E7CE] px-8 py-3 rounded-full text-sm font-bold hover:bg-[#1a4a3a] transition-all flex items-center gap-2"
             >
+              <Plus size={18} weight="bold" />
               Post Your First Job
             </Link>
           )}
@@ -167,21 +182,28 @@ export default function MyJobsPage() {
               <div className="flex flex-col gap-2 shrink-0">
                 <Link
                   href={`/dashboard/recruiter/jobs/${job._id}`}
-                  className="text-xs bg-[#102C26] text-[#F7E7CE] px-4 py-2 rounded-full font-medium hover:bg-[#1a4a3a] transition-colors text-center"
+                  className="text-xs bg-[#102C26] text-[#F7E7CE] px-4 py-2 rounded-full font-medium hover:bg-[#1a4a3a] transition-colors text-center flex items-center justify-center gap-1.5"
                 >
+                  <PencilSimple size={14} />
                   Edit
                 </Link>
                 <button
                   onClick={() => router.push(`/dashboard/recruiter/jobs/${job._id}?tab=applications`)}
-                  className="text-xs border border-[#e8d0b0] text-[#102C26] px-4 py-2 rounded-full font-medium hover:border-[#102C26] transition-colors"
+                  className="text-xs border border-[#e8d0b0] text-[#102C26] px-4 py-2 rounded-full font-medium hover:border-[#102C26] transition-colors flex items-center justify-center gap-1.5"
                 >
+                  <Eye size={14} />
                   View
                 </button>
                 <button
                   onClick={() => handleDelete(job._id)}
                   disabled={deletingId === job._id}
-                  className="text-xs border border-red-200 text-red-500 px-4 py-2 rounded-full font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+                  className="text-xs border border-red-200 text-red-500 px-4 py-2 rounded-full font-medium hover:bg-red-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
+                  {deletingId === job._id ? (
+                    <CircleNotch size={14} className="animate-spin" />
+                  ) : (
+                    <Trash size={14} />
+                  )}
                   {deletingId === job._id ? "..." : "Delete"}
                 </button>
               </div>

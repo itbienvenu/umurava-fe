@@ -3,6 +3,19 @@
 import { useState, useEffect, FormEvent } from "react";
 import { authFetch, getTokens } from "@/lib/auth";
 import { ApiError } from "@/lib/apiError";
+import { 
+  Buildings, 
+  MapPin, 
+  ShareNetwork, 
+  FloppyDisk, 
+  CircleNotch, 
+  CheckCircle, 
+  WarningCircle,
+  Globe,
+  Link,
+  TwitterLogo,
+  LinkedinLogo
+} from "@phosphor-icons/react";
 
 interface ProfileForm {
   company_name: string;
@@ -115,8 +128,9 @@ export default function CompanyProfilePage() {
 
   if (fetching) {
     return (
-      <div className="flex items-center justify-center py-24 text-[#6b8f85]">
-        Loading profile...
+      <div className="flex flex-col items-center justify-center py-24 text-[#6b8f85]">
+        <CircleNotch size={48} className="animate-spin mb-4" />
+        <p className="text-sm">Loading profile...</p>
       </div>
     );
   }
@@ -130,19 +144,24 @@ export default function CompanyProfilePage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">
+          <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg flex items-center gap-2">
+            <WarningCircle size={18} />
             {error}
           </div>
         )}
         {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-lg">
+          <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-lg flex items-center gap-2">
+            <CheckCircle size={18} />
             {success}
           </div>
         )}
 
         {/* Company info */}
         <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6 flex flex-col gap-4">
-          <h2 className="font-semibold text-[#102C26]">Company Info</h2>
+          <h2 className="font-semibold text-[#102C26] flex items-center gap-2">
+            <Buildings size={20} weight="duotone" />
+            Company Info
+          </h2>
 
           <div>
             <label className={labelClass}>Company Name *</label>
@@ -183,7 +202,10 @@ export default function CompanyProfilePage() {
 
         {/* Location */}
         <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6 flex flex-col gap-4">
-          <h2 className="font-semibold text-[#102C26]">Location</h2>
+          <h2 className="font-semibold text-[#102C26] flex items-center gap-2">
+            <MapPin size={20} weight="duotone" />
+            Location
+          </h2>
 
           <div>
             <label className={labelClass}>Address</label>
@@ -210,7 +232,10 @@ export default function CompanyProfilePage() {
 
         {/* Social links */}
         <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6 flex flex-col gap-4">
-          <h2 className="font-semibold text-[#102C26]">Social Links</h2>
+          <h2 className="font-semibold text-[#102C26] flex items-center gap-2">
+            <ShareNetwork size={20} weight="duotone" />
+            Social Links
+          </h2>
 
           <div>
             <label className={labelClass}>LinkedIn</label>
@@ -230,8 +255,9 @@ export default function CompanyProfilePage() {
         <button
           type="submit"
           disabled={loading}
-          className="bg-[#102C26] text-[#F7E7CE] py-3 rounded-full font-medium hover:bg-[#1a4a3a] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          className="bg-[#102C26] text-[#F7E7CE] py-3 rounded-full font-medium hover:bg-[#1a4a3a] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm hover:shadow-md active:scale-[0.98]"
         >
+          {loading ? <CircleNotch size={20} className="animate-spin" /> : <FloppyDisk size={20} />}
           {loading ? "Saving..." : "Save Profile"}
         </button>
       </form>

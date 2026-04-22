@@ -3,6 +3,23 @@
 import { useState } from "react";
 import { authFetch } from "@/lib/auth";
 import { ApiError } from "@/lib/apiError";
+import { 
+  CheckCircle, 
+  WarningCircle, 
+  FilePdf, 
+  FileCsv, 
+  FolderOpen, 
+  Lightning, 
+  ArrowRight, 
+  X, 
+  CircleNotch, 
+  UploadSimple, 
+  ChartBar,
+  Plus,
+  Table,
+  Check,
+  Dot
+} from "@phosphor-icons/react";
 
 interface SourcingTabProps {
   jobId: string;
@@ -174,7 +191,9 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
     return (
       <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 animate-in fade-in zoom-in-95 duration-300">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-3xl shadow-sm">✓</div>
+          <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-green-600 shadow-sm">
+            <CheckCircle size={32} weight="fill" />
+          </div>
           <div>
             <h2 className="text-xl font-bold text-[#102C26]">{result.type === 'csv' ? 'Import Completed' : 'Upload Successful'}</h2>
             <p className="text-sm text-[#6b8f85]">
@@ -246,15 +265,15 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
             <h3 className="font-bold text-[#102C26] mb-2">What happens next?</h3>
             <ul className="space-y-3 text-sm text-[#4a6b63]">
               <li className="flex gap-2">
-                <span className="text-green-600 font-bold">•</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-green-600 mt-1.5 shrink-0" />
                 <span>Our AI is currently reading and parsing each PDF to extract skills and experience.</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-green-600 font-bold">•</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-green-600 mt-1.5 shrink-0" />
                 <span>Candidates will appear in the <b>Applications</b> tab with a <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-bold uppercase">Pending</span> status.</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-green-600 font-bold">•</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-green-600 mt-1.5 shrink-0" />
                 <span>Once parsing is complete (usually 30-60 seconds), their profiles will be fully updated.</span>
               </li>
             </ul>
@@ -282,15 +301,17 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
       <div className="flex p-1 bg-[#F7E7CE]/20 rounded-2xl border border-[#e8d0b0] w-fit">
         <button
           onClick={() => { setMode("cv"); setError(""); }}
-          className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${mode === "cv" ? "bg-[#102C26] text-[#F7E7CE] shadow-md" : "text-[#6b8f85] hover:text-[#102C26]"}`}
+          className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${mode === "cv" ? "bg-[#102C26] text-[#F7E7CE] shadow-md" : "text-[#6b8f85] hover:text-[#102C26]"}`}
         >
-          📄 Batch CV Upload
+          <FilePdf size={18} weight={mode === "cv" ? "fill" : "regular"} />
+          Batch CV Upload
         </button>
         <button
           onClick={() => { setMode("csv"); setError(""); }}
-          className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${mode === "csv" ? "bg-[#102C26] text-[#F7E7CE] shadow-md" : "text-[#6b8f85] hover:text-[#102C26]"}`}
+          className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${mode === "csv" ? "bg-[#102C26] text-[#F7E7CE] shadow-md" : "text-[#6b8f85] hover:text-[#102C26]"}`}
         >
-          📊 CSV/Excel Import
+          <Table size={18} weight={mode === "csv" ? "fill" : "regular"} />
+          CSV/Excel Import
         </button>
       </div>
 
@@ -308,8 +329,8 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
               onChange={handleCvFilesChange}
               className="absolute inset-0 opacity-0 cursor-pointer z-10"
             />
-            <div className="w-20 h-20 bg-white rounded-3xl shadow-md flex items-center justify-center text-4xl mb-5 group-hover:scale-110 transition-transform duration-300">
-              📂
+            <div className="w-20 h-20 bg-white rounded-3xl shadow-md flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 text-[#102C26]">
+              <FolderOpen size={40} weight="duotone" />
             </div>
             <p className="font-bold text-[#102C26] text-lg">Drop CVs here or click to browse</p>
             <p className="text-xs text-[#6b8f85] mt-2 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100">Multiple PDF files supported (Max 10MB each)</p>
@@ -334,7 +355,7 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                 {cvFiles.map((f, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-[#F7E7CE]/10 border border-[#e8d0b0] rounded-xl hover:bg-white transition-colors group">
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <span className="text-xl">📄</span>
+                      <FilePdf size={24} weight="fill" className="text-[#102C26]" />
                       <div className="overflow-hidden">
                         <p className="text-xs font-bold text-[#102C26] truncate">{f.name}</p>
                         <p className="text-[10px] text-[#6b8f85]">{(f.size / 1024).toFixed(0)} KB</p>
@@ -344,7 +365,7 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                       onClick={() => removeCvFile(i)}
                       className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
                     >
-                      ✕
+                      <X size={14} weight="bold" />
                     </button>
                   </div>
                 ))}
@@ -358,18 +379,19 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                 >
                   {isUploading ? (
                     <>
-                      <span className="w-5 h-5 border-3 border-[#F7E7CE]/30 border-t-[#F7E7CE] rounded-full animate-spin"></span>
+                      <CircleNotch size={24} className="animate-spin" />
                       <span>Uploading & Processing...</span>
                     </>
                   ) : (
                     <>
                       <span>Start AI Sourcing</span>
-                      <span className="text-lg">→</span>
+                      <ArrowRight size={24} weight="bold" />
                     </>
                   )}
                 </button>
-                <p className="text-[10px] text-center text-[#6b8f85] mt-4 uppercase tracking-widest font-bold">
-                  ⚡ Powered by Gemini AI Integration
+                <p className="text-[10px] text-center text-[#6b8f85] mt-4 uppercase tracking-widest font-bold flex items-center justify-center gap-2">
+                  <Lightning size={14} weight="fill" className="text-amber-500" />
+                  Powered by Gemini AI Integration
                 </p>
               </div>
             </div>
@@ -388,8 +410,8 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
               onChange={handleFileChange}
               className="absolute inset-0 opacity-0 cursor-pointer z-10"
             />
-            <div className="w-20 h-20 bg-white rounded-3xl shadow-md flex items-center justify-center text-4xl mb-5 group-hover:scale-110 transition-transform duration-300">
-              📊
+            <div className="w-20 h-20 bg-white rounded-3xl shadow-md flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 text-[#102C26]">
+              <Table size={40} weight="duotone" />
             </div>
             <p className="font-bold text-[#102C26] text-lg">{file ? file.name : "Select Spreadsheet"}</p>
             <p className="text-xs text-[#6b8f85] mt-2 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100">{file ? `${(file.size / 1024).toFixed(1)} KB` : "CSV or Excel files up to 10MB"}</p>
@@ -453,7 +475,7 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                 >
                   {isUploading ? (
                     <>
-                      <span className="w-4 h-4 border-2 border-[#F7E7CE]/30 border-t-[#F7E7CE] rounded-full animate-spin"></span>
+                      <CircleNotch size={18} className="animate-spin" />
                       <span>Processing...</span>
                     </>
                   ) : "Start Import"}
@@ -465,8 +487,8 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
       )}
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-600 text-sm rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-          <span className="text-xl">⚠️</span>
+        <div className="p-4 bg-red-50 border border-red-200 text-red-600 text-sm rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2 shadow-sm">
+          <WarningCircle size={24} weight="fill" className="shrink-0" />
           <div>
             <p className="font-bold">Heads up!</p>
             <p>{error}</p>

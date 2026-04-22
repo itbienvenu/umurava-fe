@@ -4,16 +4,27 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getUser, clearTokens, hasRole } from "@/lib/auth";
+import { 
+  SquaresFour, 
+  Briefcase, 
+  ClipboardText, 
+  MagnifyingGlass, 
+  Buildings, 
+  User,
+  CaretRight,
+  SignOut,
+  List
+} from "@phosphor-icons/react";
 
 const NAV = [
   {
     label: "Dashboard",
     href: "/dashboard/recruiter",
-    icon: "▦",
+    icon: <SquaresFour size={20} weight="duotone" />,
   },
   {
     label: "Jobs",
-    icon: "💼",
+    icon: <Briefcase size={20} weight="duotone" />,
     children: [
       { label: "My Jobs", href: "/dashboard/recruiter/jobs" },
       { label: "Create Job", href: "/dashboard/recruiter/jobs/create" },
@@ -22,11 +33,11 @@ const NAV = [
   {
     label: "Applications",
     href: "/dashboard/recruiter/applications",
-    icon: "📋",
+    icon: <ClipboardText size={20} weight="duotone" />,
   },
   {
     label: "Screening",
-    icon: "🔍",
+    icon: <MagnifyingGlass size={20} weight="duotone" />,
     children: [
       { label: "Run Screening", href: "/dashboard/recruiter/screening" },
       { label: "Shortlist", href: "/dashboard/recruiter/screening/shortlist" },
@@ -35,14 +46,15 @@ const NAV = [
   {
     label: "Company Profile",
     href: "/dashboard/recruiter/profile",
-    icon: "🏢",
+    icon: <Buildings size={20} weight="duotone" />,
   },
   {
     label: "Account",
     href: "/dashboard/recruiter/account",
-    icon: "👤",
+    icon: <User size={20} weight="duotone" />,
   },
 ];
+
 
 export default function RecruiterLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -115,7 +127,9 @@ export default function RecruiterLayout({ children }: { children: React.ReactNod
                       <span>{item.icon}</span>
                       {item.label}
                     </span>
-                    <span className={`text-xs transition-transform ${isOpen ? "rotate-90" : ""}`}>▶</span>
+                    <span className={`transition-transform ${isOpen ? "rotate-90" : ""}`}>
+                      <CaretRight size={14} weight="bold" />
+                    </span>
                   </button>
                   {isOpen && (
                     <div className="ml-8 mb-1 flex flex-col gap-0.5">
@@ -168,8 +182,9 @@ export default function RecruiterLayout({ children }: { children: React.ReactNod
           </div>
           <button
             onClick={handleLogout}
-            className="w-full text-sm border border-[#F7E7CE]/30 py-1.5 rounded-full hover:bg-[#F7E7CE]/10 transition-colors"
+            className="w-full text-sm border border-[#F7E7CE]/30 py-2 rounded-full hover:bg-[#F7E7CE]/10 transition-colors flex items-center justify-center gap-2"
           >
+            <SignOut size={16} />
             Logout
           </button>
         </div>
@@ -179,7 +194,9 @@ export default function RecruiterLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Top bar (mobile) */}
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-[#102C26] text-[#F7E7CE] shrink-0">
-          <button onClick={() => setSidebarOpen(true)} className="text-xl">☰</button>
+          <button onClick={() => setSidebarOpen(true)} className="text-xl">
+            <List size={28} />
+          </button>
           <span className="font-bold">🍎 AppleOfEve</span>
           <div className="w-6" />
         </header>

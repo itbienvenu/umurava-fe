@@ -3,6 +3,20 @@
 import { useState, useRef, useEffect } from "react";
 import { uploadCV, saveProfile, getApplicantProfile } from "@/lib/applicants";
 import { ApplicantProfile } from "@/types/applicant";
+import { 
+  User, 
+  Briefcase, 
+  GraduationCap, 
+  Code, 
+  FileText, 
+  CloudArrowUp,
+  CheckCircle,
+  WarningCircle,
+  X,
+  Plus,
+  Trash,
+  CircleNotch
+} from "@phosphor-icons/react";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("personal");
@@ -183,7 +197,7 @@ export default function ProfilePage() {
   if (pageLoading) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#102C26]"></div>
+        <CircleNotch size={48} className="animate-spin text-[#102C26]" />
       </div>
     );
   }
@@ -205,30 +219,43 @@ export default function ProfilePage() {
       </header>
 
       {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex justify-between items-center">
-          {error}
-          <button onClick={() => setError(null)}>×</button>
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-2">
+            <WarningCircle size={20} />
+            {error}
+          </div>
+          <button onClick={() => setError(null)}><X size={16} /></button>
         </div>
       )}
 
       {success && (
-        <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex justify-between items-center">
-          {success}
-          <button onClick={() => setSuccess(null)}>×</button>
+        <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle size={20} />
+            {success}
+          </div>
+          <button onClick={() => setSuccess(null)}><X size={16} /></button>
         </div>
       )}
 
       {/* Profile Navigation */}
-      <div className="flex gap-6 border-b border-[#e8d0b0] mb-8">
-        {["personal", "experience", "education", "skills", "cv"].map((tab) => (
+      <div className="flex gap-8 border-b border-[#e8d0b0] mb-8 overflow-x-auto">
+        {[
+          { id: "personal", label: "Personal", icon: <User size={18} /> },
+          { id: "experience", label: "Experience", icon: <Briefcase size={18} /> },
+          { id: "education", label: "Education", icon: <GraduationCap size={18} /> },
+          { id: "skills", label: "Skills", icon: <Code size={18} /> },
+          { id: "cv", label: "Resume / CV", icon: <FileText size={18} /> },
+        ].map((tab) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`pb-3 text-sm font-medium capitalize transition-colors relative
-              ${activeTab === tab ? "text-[#102C26]" : "text-[#6b8f85] hover:text-[#102C26]"}`}
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`pb-3 text-sm font-medium transition-colors relative flex items-center gap-2 whitespace-nowrap
+              ${activeTab === tab.id ? "text-[#102C26]" : "text-[#6b8f85] hover:text-[#102C26]"}`}
           >
-            {tab === "cv" ? "Resume / CV" : tab}
-            {activeTab === tab && (
+            {tab.icon}
+            {tab.label}
+            {activeTab === tab.id && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#102C26]" />
             )}
           </button>
@@ -389,8 +416,9 @@ export default function ProfilePage() {
                       newExp.splice(i, 1);
                       updateProfileField("experience", newExp);
                     }}
-                    className="absolute top-4 right-4 text-red-400 hover:text-red-600 transition-colors text-sm font-bold"
+                    className="absolute top-4 right-4 text-red-400 hover:text-red-600 transition-colors flex items-center gap-1 text-xs font-bold"
                   >
+                    <Trash size={14} />
                     Remove
                   </button>
                   
@@ -460,7 +488,7 @@ export default function ProfilePage() {
               ))}
               {(!profile.experience || profile.experience.length === 0) && (
                 <div className="flex flex-col items-center justify-center py-12 text-[#6b8f85] border-2 border-dashed border-[#e8d0b0] rounded-xl pointer-events-none">
-                  <span className="text-3xl mb-2">💼</span>
+                  <Briefcase size={32} weight="duotone" className="mb-2 opacity-50" />
                   <p className="text-sm">No experience added yet.</p>
                 </div>
               )}
@@ -537,8 +565,9 @@ export default function ProfilePage() {
                       newEdu.splice(i, 1);
                       updateProfileField("education", newEdu);
                     }}
-                    className="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-4 right-4 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-xs font-bold"
                   >
+                    <Trash size={14} />
                     Delete
                   </button>
                   <h4 className="font-bold text-[#102C26]">{edu.degree} in {edu.major}</h4>
@@ -602,8 +631,8 @@ export default function ProfilePage() {
                         newSkills.splice(index, 1);
                         updateProfileField("skills", newSkills);
                       }}
-                      className="text-red-400 hover:text-red-600 font-bold"
-                    >×</button>
+                      className="text-red-400 hover:text-red-600"
+                    ><X size={14} weight="bold" /></button>
                   </span>
                 ))}
               </div>
@@ -625,7 +654,7 @@ export default function ProfilePage() {
             >
               <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all
                 ${isDragging ? "bg-[#102C26] text-white" : "bg-[#F7E7CE] group-hover:scale-110"}`}>
-                {uploading ? "⏳" : isDragging ? "📥" : "📄"}
+                {uploading ? <CircleNotch size={32} className="animate-spin" /> : isDragging ? <CloudArrowUp size={32} /> : <FileText size={32} />}
               </div>
               <div className="text-center">
                 <p className="text-sm font-medium text-[#102C26]">

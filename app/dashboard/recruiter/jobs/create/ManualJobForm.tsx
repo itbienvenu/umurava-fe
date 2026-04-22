@@ -4,6 +4,24 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { authFetch } from "@/lib/auth";
 import { ApiError } from "@/lib/apiError";
+import { 
+  ClipboardText, 
+  Airplane, 
+  Buildings, 
+  Globe, 
+  GraduationCap, 
+  Wrench, 
+  Scroll, 
+  CircleNotch, 
+  RocketLaunch, 
+  CheckCircle, 
+  X, 
+  Plus, 
+  WarningCircle,
+  Briefcase,
+  MapPin,
+  Translate
+} from "@phosphor-icons/react";
 
 interface Skill {
   name: string;
@@ -187,7 +205,8 @@ export default function ManualJobForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 pb-20">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl sticky top-0 z-10 shadow-sm">
+        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl sticky top-0 z-10 shadow-sm flex items-center gap-2">
+          <WarningCircle size={18} />
           {error}
         </div>
       )}
@@ -195,7 +214,9 @@ export default function ManualJobForm() {
       {/* Basic Information */}
       <div className={sectionClass}>
         <h2 className="text-lg font-bold text-[#102C26] mb-4 flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center text-xl shadow-inner">📋</span>
+          <div className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center shadow-inner">
+            <ClipboardText size={20} weight="bold" />
+          </div>
           Basic Information
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -248,7 +269,9 @@ export default function ManualJobForm() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className={sectionClass}>
           <h2 className="text-lg font-bold text-[#102C26] mb-4 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center text-xl shadow-inner">✈️</span>
+            <div className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center shadow-inner">
+              <Translate size={20} weight="bold" />
+            </div>
             Travel & Language
           </h2>
           <div className="space-y-6">
@@ -269,7 +292,14 @@ export default function ManualJobForm() {
               <div className="flex flex-wrap gap-2 mb-2">
                 {formData.languages.map((l) => (
                   <span key={l} className={pillClass}>
-                    {l} <button type="button" onClick={() => removeItem(formData.languages, formData.languages.indexOf(l), "languages")}>✕</button>
+                    {l} 
+                    <button 
+                      type="button" 
+                      onClick={() => removeItem(formData.languages, formData.languages.indexOf(l), "languages")}
+                      className="hover:text-red-400 transition-colors"
+                    >
+                      <X size={12} weight="bold" />
+                    </button>
                   </span>
                 ))}
               </div>
@@ -282,7 +312,9 @@ export default function ManualJobForm() {
                   className={inputClass}
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem('language'))}
                 />
-                <button type="button" onClick={() => addItem('language')} className="bg-[#102C26] text-white px-4 rounded-xl">+</button>
+                <button type="button" onClick={() => addItem('language')} className="bg-[#102C26] text-white px-4 rounded-xl flex items-center justify-center">
+                  <Plus size={18} weight="bold" />
+                </button>
               </div>
             </div>
           </div>
@@ -293,7 +325,9 @@ export default function ManualJobForm() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className={sectionClass}>
           <h2 className="text-lg font-bold text-[#102C26] mb-4 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center text-xl shadow-inner">🏢</span>
+            <div className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center shadow-inner">
+              <Buildings size={20} weight="bold" />
+            </div>
             Company
           </h2>
           <div className="space-y-4">
@@ -340,7 +374,9 @@ export default function ManualJobForm() {
 
         <div className={sectionClass}>
           <h2 className="text-lg font-bold text-[#102C26] mb-4 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center text-xl shadow-inner">🌐</span>
+            <div className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center shadow-inner">
+              <Globe size={20} weight="bold" />
+            </div>
             Domain
           </h2>
           <div className="space-y-4">
@@ -361,7 +397,14 @@ export default function ManualJobForm() {
               <div className="flex flex-wrap gap-2 mb-2">
                 {formData.domain.secondary.map((d) => (
                   <span key={d} className={pillClass}>
-                    {d} <button type="button" onClick={() => removeItem(formData.domain.secondary, formData.domain.secondary.indexOf(d), "domain.secondary")}>✕</button>
+                    {d} 
+                    <button 
+                      type="button" 
+                      onClick={() => removeItem(formData.domain.secondary, formData.domain.secondary.indexOf(d), "domain.secondary")}
+                      className="hover:text-red-400 transition-colors"
+                    >
+                      <X size={12} weight="bold" />
+                    </button>
                   </span>
                 ))}
               </div>
@@ -374,7 +417,9 @@ export default function ManualJobForm() {
                   className={inputClass}
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem('secondaryDomain'))}
                 />
-                <button type="button" onClick={() => addItem('secondaryDomain')} className="bg-[#102C26] text-white px-4 rounded-xl">+</button>
+                <button type="button" onClick={() => addItem('secondaryDomain')} className="bg-[#102C26] text-white px-4 rounded-xl flex items-center justify-center">
+                  <Plus size={18} weight="bold" />
+                </button>
               </div>
             </div>
           </div>
@@ -384,7 +429,9 @@ export default function ManualJobForm() {
       {/* Requirements */}
       <div className={sectionClass}>
         <h2 className="text-lg font-bold text-[#102C26] mb-4 flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center text-xl shadow-inner">🎓</span>
+          <div className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center shadow-inner">
+            <GraduationCap size={20} weight="bold" />
+          </div>
           Requirements
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -422,7 +469,14 @@ export default function ManualJobForm() {
               <div className="flex flex-wrap gap-2 mb-2">
                 {formData.requirements.experience.roles.map((r) => (
                   <span key={r} className={pillClass}>
-                    {r} <button type="button" onClick={() => removeItem(formData.requirements.experience.roles, formData.requirements.experience.roles.indexOf(r), "requirements.experience.roles")}>✕</button>
+                    {r} 
+                    <button 
+                      type="button" 
+                      onClick={() => removeItem(formData.requirements.experience.roles, formData.requirements.experience.roles.indexOf(r), "requirements.experience.roles")}
+                      className="hover:text-red-400 transition-colors"
+                    >
+                      <X size={12} weight="bold" />
+                    </button>
                   </span>
                 ))}
               </div>
@@ -435,7 +489,9 @@ export default function ManualJobForm() {
                   className={inputClass}
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem('role'))}
                 />
-                <button type="button" onClick={() => addItem('role')} className="bg-[#102C26] text-white px-4 rounded-xl">+</button>
+                <button type="button" onClick={() => addItem('role')} className="bg-[#102C26] text-white px-4 rounded-xl flex items-center justify-center">
+                  <Plus size={18} weight="bold" />
+                </button>
               </div>
             </div>
           </div>
@@ -474,7 +530,9 @@ export default function ManualJobForm() {
       {/* Skills, Soft Skills, Resources */}
       <div className={sectionClass}>
         <h2 className="text-lg font-bold text-[#102C26] mb-4 flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center text-xl shadow-inner">🛠️</span>
+          <div className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center shadow-inner">
+            <Wrench size={20} weight="bold" />
+          </div>
           Hard & Soft Skills
         </h2>
 
@@ -487,7 +545,13 @@ export default function ManualJobForm() {
                 <div key={skill.name} className="bg-[#F7E7CE]/20 border border-[#e8d0b0] p-3 rounded-xl flex flex-col gap-1 relative group">
                   <span className="font-bold text-sm text-[#102C26]">{skill.name}</span>
                   <span className="text-[10px] text-[#6b8f85] uppercase tracking-tighter">{skill.category.replaceAll('_', ' ')} • {skill.level}</span>
-                  <button type="button" onClick={() => removeItem(formData.skills, formData.skills.indexOf(skill), "skills")} className="absolute top-2 right-2 text-[#102C26] opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                  <button 
+                    type="button" 
+                    onClick={() => removeItem(formData.skills, formData.skills.indexOf(skill), "skills")} 
+                    className="absolute top-2 right-2 text-[#102C26] opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-500"
+                  >
+                    <X size={14} weight="bold" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -517,8 +581,9 @@ export default function ManualJobForm() {
                 <button
                   type="button"
                   onClick={() => addItem('skill')}
-                  className="bg-[#102C26] text-[#F7E7CE] text-xs font-bold rounded-xl hover:bg-[#1a4a3a]"
+                  className="bg-[#102C26] text-[#F7E7CE] text-xs font-bold rounded-xl hover:bg-[#1a4a3a] flex items-center justify-center gap-2"
                 >
+                  <Plus size={14} weight="bold" />
                   Add Skill
                 </button>
               </div>
@@ -532,7 +597,14 @@ export default function ManualJobForm() {
               <div className="flex flex-wrap gap-2 mb-4">
                 {formData.soft_skills.map((s) => (
                   <span key={s.name} className={pillClass}>
-                    {s.name} <button type="button" onClick={() => removeItem(formData.soft_skills, formData.soft_skills.indexOf(s), "soft_skills")}>✕</button>
+                    {s.name} 
+                    <button 
+                      type="button" 
+                      onClick={() => removeItem(formData.soft_skills, formData.soft_skills.indexOf(s), "soft_skills")}
+                      className="hover:text-red-400 transition-colors"
+                    >
+                      <X size={12} weight="bold" />
+                    </button>
                   </span>
                 ))}
               </div>
@@ -545,7 +617,9 @@ export default function ManualJobForm() {
                   className={inputClass}
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem('softSkill'))}
                 />
-                <button type="button" onClick={() => addItem('softSkill')} className="bg-[#102C26] text-white px-4 rounded-xl">+</button>
+                <button type="button" onClick={() => addItem('softSkill')} className="bg-[#102C26] text-white px-4 rounded-xl flex items-center justify-center">
+                  <Plus size={18} weight="bold" />
+                </button>
               </div>
             </div>
 
@@ -555,7 +629,14 @@ export default function ManualJobForm() {
               <div className="flex flex-wrap gap-2 mb-4">
                 {formData.resources.map((r) => (
                   <span key={r.name} className={pillClass}>
-                    {r.name} <button type="button" onClick={() => removeItem(formData.resources, formData.resources.indexOf(r), "resources")}>✕</button>
+                    {r.name} 
+                    <button 
+                      type="button" 
+                      onClick={() => removeItem(formData.resources, formData.resources.indexOf(r), "resources")}
+                      className="hover:text-red-400 transition-colors"
+                    >
+                      <X size={12} weight="bold" />
+                    </button>
                   </span>
                 ))}
               </div>
@@ -568,7 +649,9 @@ export default function ManualJobForm() {
                   className={inputClass}
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem('resource'))}
                 />
-                <button type="button" onClick={() => addItem('resource')} className="bg-[#102C26] text-white px-4 rounded-xl">+</button>
+                <button type="button" onClick={() => addItem('resource')} className="bg-[#102C26] text-white px-4 rounded-xl flex items-center justify-center">
+                  <Plus size={18} weight="bold" />
+                </button>
               </div>
             </div>
           </div>
@@ -578,7 +661,9 @@ export default function ManualJobForm() {
       {/* Description & Responsibilities */}
       <div className={sectionClass}>
         <h2 className="text-lg font-bold text-[#102C26] mb-4 flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center text-xl shadow-inner">📜</span>
+          <div className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center shadow-inner">
+            <Scroll size={20} weight="bold" />
+          </div>
           Details & Duties
         </h2>
         <div className="space-y-6">
@@ -608,10 +693,16 @@ export default function ManualJobForm() {
             <label className={labelClass}>Responsibilities</label>
             <ul className="space-y-2 mb-4">
               {formData.responsibilities.map((r) => (
-                <li key={r} className="flex items-start gap-2 text-sm text-[#102C26] bg-[#F7E7CE]/10 p-2 rounded-lg">
-                  <span className="mt-1">✅</span>
+                <li key={r} className="flex items-start gap-3 text-sm text-[#102C26] bg-[#F7E7CE]/10 p-3 rounded-xl border border-[#e8d0b0]/30">
+                  <CheckCircle size={18} weight="fill" className="text-green-600 shrink-0 mt-0.5" />
                   <span className="flex-1">{r}</span>
-                  <button type="button" onClick={() => removeItem(formData.responsibilities, formData.responsibilities.indexOf(r), "responsibilities")} className="text-red-400 hover:text-red-600">✕</button>
+                  <button 
+                    type="button" 
+                    onClick={() => removeItem(formData.responsibilities, formData.responsibilities.indexOf(r), "responsibilities")} 
+                    className="text-[#6b8f85] hover:text-red-500 transition-colors"
+                  >
+                    <X size={14} weight="bold" />
+                  </button>
                 </li>
               ))}
             </ul>
@@ -624,7 +715,9 @@ export default function ManualJobForm() {
                 className={inputClass}
                 onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem('responsibility'))}
               />
-              <button type="button" onClick={() => addItem('responsibility')} className="bg-[#102C26] text-white px-4 rounded-xl">+</button>
+              <button type="button" onClick={() => addItem('responsibility')} className="bg-[#102C26] text-white px-4 rounded-xl flex items-center justify-center">
+                <Plus size={18} weight="bold" />
+              </button>
             </div>
           </div>
         </div>
@@ -639,12 +732,12 @@ export default function ManualJobForm() {
           >
             {loading ? (
               <>
-                <span className="animate-spin inline-block text-xl font-thin">⟳</span>
+                <CircleNotch size={24} className="animate-spin" />
                 Creating Draft...
               </>
             ) : (
               <>
-                <span>🚀</span>
+                <RocketLaunch size={24} weight="fill" />
                 Create Job Manually
               </>
             )}
