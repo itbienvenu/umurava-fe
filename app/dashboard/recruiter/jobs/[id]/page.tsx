@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { authFetch } from "@/lib/auth";
 import { ApiError } from "@/lib/apiError";
+import SourcingTab from "./SourcingTab";
 
 interface Skill { name: string; category: string; required: boolean; level: string; weight: number }
 interface Education { level: string; fields: string[] }
@@ -29,7 +30,7 @@ interface Job {
 }
 
 type Status = "draft" | "published" | "archived";
-const TABS = ["Details", "Applications", "Shortlist"] as const;
+const TABS = ["Details", "Applications", "Shortlist", "Sourcing"] as const;
 type Tab = typeof TABS[number];
 
 const STATUS_STYLES: Record<string, string> = {
@@ -400,6 +401,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <p className="text-sm">Run screening first to see the shortlist.</p>
         </div>
       )}
+
+      {activeTab === "Sourcing" && <SourcingTab jobId={id} />}
     </div>
   );
 }
