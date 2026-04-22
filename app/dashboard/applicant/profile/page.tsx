@@ -1,0 +1,518 @@
+'use client'
+
+import { useState, useRef, useEffect } from "react";
+import { uploadCV, saveProfile, getApplicantProfile } from "@/lib/applicants";
+import { ApplicantProfile } from "@/types/applicant";
+
+export default function ProfilePage() {
+  const [activeTab, setActiveTab] = useState("personal");
+  const [pageLoading, setPageLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Profile State
+  const [profile, setProfile] = useState<Partial<ApplicantProfile>>({
+    first_name: "",
+    last_name: "",
+    email: "",
+    headline: "",
+    bio: "",
+    location: "",
+    skills: [],
+    experience: [],
+    education: [],
+    languages: [],
+    social_links: { linkedin: "", github: "", twitter: "" }
+  });
+
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        setPageLoading(true);
+        console.log("Fetching profile...");
+        const res = await getApplicantProfile();
+        console.log("Profile response received:", res);
+        
+        if (res.success && res.data) {
+          // Fix: Check if fields are at the root of res.data or inside res.data.profile
+          const profileData = res.data.profile || res.data;
+          
+          setProfile(prev => ({
+            ...prev,
+            ...profileData,
+            // Ensure nested objects preserve defaults if missing in response
+            social_links: {
+              ...prev.social_links,
+              ...(profileData.social_links || {})
+            }
+          }));
+        }
+      } catch (err: any) {
+        console.error("Error fetching profile:", err);
+        // If 404, it just means no profile exists yet, which is fine.
+        if (err.status !== 404) {
+          setError(err.message || "Failed to load profile.");
+        }
+      } finally {
+        setPageLoading(false);
+      }
+    }
+    fetchProfile();
+  }, []);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      setError("Please upload a PDF file.");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setError(null);
+      const res = await uploadCV(file);
+      if (res.success) {
+        const profileData = res.data.profile || res.data;
+        setProfile(prev => ({ ...prev, ...profileData }));
+        setSuccess("CV parsed successfully! Please review your details across the tabs.");
+        setActiveTab("personal"); // Switch to review details
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to upload CV.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      const res = await saveProfile(profile);
+      if (res.success) {
+        setSuccess("Profile saved successfully!");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to save profile.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateProfileField = (field: string, value: any) => {
+    setProfile(prev => ({ ...prev, [field]: value }));
+  };
+
+  if (pageLoading) {
+    return (
+      <div className="flex justify-center items-center h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#102C26]"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto pb-20">
+      <header className="mb-8 flex justify-between items-end">
+        <div>
+          <h1 className="text-2xl font-bold text-[#102C26]">My Profile</h1>
+          <p className="text-[#6b8f85] text-sm">Manage your professional identity and resume.</p>
+        </div>
+        <button 
+          onClick={handleSave}
+          disabled={saving || uploading}
+          className="bg-[#102C26] text-[#F7E7CE] px-8 py-3 rounded-full text-sm font-bold hover:bg-[#1a4a3a] transition-all disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Save Profile"}
+        </button>
+      </header>
+
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex justify-between items-center">
+          {error}
+          <button onClick={() => setError(null)}>×</button>
+        </div>
+      )}
+
+      {success && (
+        <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex justify-between items-center">
+          {success}
+          <button onClick={() => setSuccess(null)}>×</button>
+        </div>
+      )}
+
+      {/* Profile Navigation */}
+      <div className="flex gap-6 border-b border-[#e8d0b0] mb-8">
+        {["personal", "experience", "education", "skills", "cv"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`pb-3 text-sm font-medium capitalize transition-colors relative
+              ${activeTab === tab ? "text-[#102C26]" : "text-[#6b8f85] hover:text-[#102C26]"}`}
+          >
+            {tab === "cv" ? "Resume / CV" : tab}
+            {activeTab === tab && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#102C26]" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 shadow-sm">
+        
+        {activeTab === "personal" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-[#6b8f85] uppercase tracking-wider">First Name</label>
+                <input
+                  type="text"
+                  value={profile.first_name || ""}
+                  onChange={(e) => updateProfileField("first_name", e.target.value)}
+                  className="w-full bg-[#fcf8f2] border border-[#e8d0b0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#102C26] transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-[#6b8f85] uppercase tracking-wider">Last Name</label>
+                <input
+                  type="text"
+                  value={profile.last_name || ""}
+                  onChange={(e) => updateProfileField("last_name", e.target.value)}
+                  className="w-full bg-[#fcf8f2] border border-[#e8d0b0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#102C26] transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-[#6b8f85] uppercase tracking-wider">Email Address</label>
+                <input
+                  type="email"
+                  value={profile.email || ""}
+                  onChange={(e) => updateProfileField("email", e.target.value)}
+                  className="w-full bg-[#fcf8f2] border border-[#e8d0b0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#102C26] transition-colors"
+                />
+              </div>
+               <div className="space-y-2">
+                <label className="text-xs font-semibold text-[#6b8f85] uppercase tracking-wider">Headline</label>
+                <input
+                  type="text"
+                  value={profile.headline || ""}
+                  onChange={(e) => updateProfileField("headline", e.target.value)}
+                  className="w-full bg-[#fcf8f2] border border-[#e8d0b0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#102C26] transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-[#6b8f85] uppercase tracking-wider">Location</label>
+                <input
+                  type="text"
+                  value={profile.location || ""}
+                  onChange={(e) => updateProfileField("location", e.target.value)}
+                  className="w-full bg-[#fcf8f2] border border-[#e8d0b0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#102C26] transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-[#6b8f85] uppercase tracking-wider">Nationality</label>
+                <input
+                  type="text"
+                  value={profile.nationality || ""}
+                  onChange={(e) => updateProfileField("nationality", e.target.value)}
+                  className="w-full bg-[#fcf8f2] border border-[#e8d0b0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#102C26] transition-colors"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-[#6b8f85] uppercase tracking-wider">Bio</label>
+              <textarea
+                rows={4}
+                value={profile.bio || ""}
+                onChange={(e) => updateProfileField("bio", e.target.value)}
+                className="w-full bg-[#fcf8f2] border border-[#e8d0b0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#102C26] transition-colors resize-none"
+              ></textarea>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "experience" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-[#102C26]">Work Experience</h3>
+            </div>
+
+            {/* Add Experience Form */}
+            <div className="bg-[#fcf8f2] border border-[#e8d0b0] rounded-2xl p-6 space-y-4">
+              <h4 className="text-sm font-bold text-[#102C26] uppercase italic">Add New Experience</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input id="new-exp-role" type="text" placeholder="Job Title" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+                <input id="new-exp-company" type="text" placeholder="Company" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+                <input id="new-exp-loc" type="text" placeholder="Location" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+                <div className="flex gap-2">
+                  <input id="new-exp-start" type="text" placeholder="Start (YYYY-MM)" className="flex-1 bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+                  <input id="new-exp-end" type="text" placeholder="End (or Present)" className="flex-1 bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  const role = (document.getElementById('new-exp-role') as HTMLInputElement).value;
+                  const company = (document.getElementById('new-exp-company') as HTMLInputElement).value;
+                  const start = (document.getElementById('new-exp-start') as HTMLInputElement).value;
+                  const end = (document.getElementById('new-exp-end') as HTMLInputElement).value;
+                  const loc = (document.getElementById('new-exp-loc') as HTMLInputElement).value;
+                  if (!role || !company) return;
+                  const newExp = { 
+                    role, 
+                    company, 
+                    start_date: start, 
+                    end_date: end === "Present" ? null : end, 
+                    location: loc, 
+                    is_current: end === "Present", 
+                    technologies: [], 
+                    description: "", 
+                    work_type: "Full-time" 
+                  };
+                  updateProfileField("experience", [...(profile.experience || []), newExp]);
+                  // Clear fields
+                  ['new-exp-role', 'new-exp-company', 'new-exp-start', 'new-exp-end', 'new-exp-loc'].forEach(id => {
+                    (document.getElementById(id) as HTMLInputElement).value = "";
+                  });
+                }}
+                className="w-full bg-[#102C26] text-[#F7E7CE] py-2 rounded-xl text-xs font-bold hover:scale-[1.01] transition-all"
+              >
+                Add Experience to List
+              </button>
+            </div>
+
+            {/* List of Editable Experiences */}
+            <div className="space-y-6 pt-4">
+              {profile.experience?.map((exp, i) => (
+                <div key={i} className="bg-white border border-[#e8d0b0] rounded-2xl p-6 relative group space-y-4">
+                  <button 
+                    onClick={() => {
+                      const newExp = [...(profile.experience || [])];
+                      newExp.splice(i, 1);
+                      updateProfileField("experience", newExp);
+                    }}
+                    className="absolute top-4 right-4 text-red-400 hover:text-red-600 transition-colors text-sm font-bold"
+                  >
+                    Remove
+                  </button>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#6b8f85] uppercase">Role / Title</label>
+                      <input 
+                        type="text" 
+                        value={exp.role || ""} 
+                        onChange={(e) => {
+                          const newExp = [...(profile.experience || [])];
+                          newExp[i].role = e.target.value;
+                          updateProfileField("experience", newExp);
+                        }}
+                        className="w-full bg-[#fcf8f2] border border-[#e8d0b0] rounded-lg px-3 py-1.5 text-sm focus:outline-none" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#6b8f85] uppercase">Company</label>
+                      <input 
+                        type="text" 
+                        value={exp.company || ""} 
+                        onChange={(e) => {
+                          const newExp = [...(profile.experience || [])];
+                          newExp[i].company = e.target.value;
+                          updateProfileField("experience", newExp);
+                        }}
+                        className="w-full bg-[#fcf8f2] border border-[#e8d0b0] rounded-lg px-3 py-1.5 text-sm focus:outline-none" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#6b8f85] uppercase">Start Date</label>
+                      <input 
+                        type="text" 
+                        value={exp.start_date || ""} 
+                        onChange={(e) => {
+                          const newExp = [...(profile.experience || [])];
+                          newExp[i].start_date = e.target.value;
+                          updateProfileField("experience", newExp);
+                        }}
+                        placeholder="YYYY-MM"
+                        className="w-full bg-[#fcf8f2] border border-[#e8d0b0] rounded-lg px-3 py-1.5 text-sm focus:outline-none" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#6b8f85] uppercase">End Date</label>
+                      <input 
+                        type="text" 
+                        value={exp.end_date || (exp.is_current ? "Present" : "")} 
+                        onChange={(e) => {
+                          const newExp = [...(profile.experience || [])];
+                          if (e.target.value === "Present") {
+                            newExp[i].end_date = null;
+                            newExp[i].is_current = true;
+                          } else {
+                            newExp[i].end_date = e.target.value;
+                            newExp[i].is_current = false;
+                          }
+                          updateProfileField("experience", newExp);
+                        }}
+                        placeholder="YYYY-MM or Present"
+                        className="w-full bg-[#fcf8f2] border border-[#e8d0b0] rounded-lg px-3 py-1.5 text-sm focus:outline-none" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {(!profile.experience || profile.experience.length === 0) && (
+                <div className="flex flex-col items-center justify-center py-12 text-[#6b8f85] border-2 border-dashed border-[#e8d0b0] rounded-xl pointer-events-none">
+                  <span className="text-3xl mb-2">💼</span>
+                  <p className="text-sm">No experience added yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "education" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-[#102C26]">Education</h3>
+            </div>
+
+            {/* Add Education Form */}
+            <div className="bg-[#fcf8f2] border border-[#e8d0b0] rounded-2xl p-6 space-y-4">
+              <h4 className="text-sm font-bold text-[#102C26] uppercase italic">Add New Education</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input id="new-edu-inst" type="text" placeholder="Institution (e.g. MIT)" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+                <input id="new-edu-degree" type="text" placeholder="Degree (e.g. Bachelors)" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+                <input id="new-edu-major" type="text" placeholder="Major (e.g. CS)" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+                <input id="new-edu-loc" type="text" placeholder="Location" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+              </div>
+              <button 
+                onClick={() => {
+                  const institution = (document.getElementById('new-edu-inst') as HTMLInputElement).value;
+                  const degree = (document.getElementById('new-edu-degree') as HTMLInputElement).value;
+                  const major = (document.getElementById('new-edu-major') as HTMLInputElement).value;
+                  const loc = (document.getElementById('new-edu-loc') as HTMLInputElement).value;
+                  if (!institution || !degree) return;
+                  const newEdu = { institution, degree, major, location: loc, start_date: "", end_date: null, field_of_study: major };
+                  updateProfileField("education", [...(profile.education || []), newEdu]);
+                }}
+                className="w-full bg-[#102C26] text-[#F7E7CE] py-2 rounded-xl text-xs font-bold hover:scale-[1.01] transition-all"
+              >
+                Add Education to List
+              </button>
+            </div>
+
+            <div className="space-y-4 pt-4">
+              {profile.education?.map((edu, i) => (
+                <div key={i} className="bg-white border border-[#e8d0b0] rounded-2xl p-6 relative group">
+                  <button 
+                    onClick={() => {
+                      const newEdu = [...(profile.education || [])];
+                      newEdu.splice(i, 1);
+                      updateProfileField("education", newEdu);
+                    }}
+                    className="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    Delete
+                  </button>
+                  <h4 className="font-bold text-[#102C26]">{edu.degree} in {edu.major}</h4>
+                  <p className="text-sm text-[#6b8f85]">{edu.institution}, {edu.location}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "skills" && (
+          <div className="space-y-6">
+            <h3 className="font-semibold text-[#102C26]">Technical Skills</h3>
+            
+            {/* Add Skill Form */}
+            <div className="bg-[#fcf8f2] border border-[#e8d0b0] rounded-2xl p-6 flex flex-wrap gap-4 items-end">
+              <div className="flex-1 min-w-[200px] space-y-2">
+                <label className="text-[10px] font-bold text-[#6b8f85] uppercase">Skill Name</label>
+                <input id="new-skill-name" type="text" placeholder="e.g. React" className="w-full bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+              </div>
+              <div className="w-40 space-y-2">
+                <label className="text-[10px] font-bold text-[#6b8f85] uppercase">Level</label>
+                <select id="new-skill-level" className="w-full bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none">
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+              </div>
+              <button 
+                onClick={() => {
+                  const name = (document.getElementById('new-skill-name') as HTMLInputElement).value;
+                  const level = (document.getElementById('new-skill-level') as HTMLSelectElement).value;
+                  if (!name) return;
+                  const newSkill = { name, level, years_of_experience: 0 };
+                  updateProfileField("skills", [...(profile.skills || []), newSkill]);
+                  (document.getElementById('new-skill-name') as HTMLInputElement).value = "";
+                }}
+                className="bg-[#102C26] text-[#F7E7CE] px-8 py-2 rounded-xl text-sm font-bold h-[38px]"
+              >
+                Add Skill
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {profile.skills?.map((skill, index) => (
+                  <span key={index} className="bg-white border border-[#e8d0b0] text-[#102C26] px-4 py-2 rounded-xl text-xs font-medium flex items-center gap-3 group">
+                    <span className="font-bold">{skill.name}</span>
+                    <span className="text-[10px] text-[#6b8f85] bg-[#fcf8f2] px-2 py-0.5 rounded-md uppercase">{skill.level}</span>
+                    <button 
+                      onClick={() => {
+                        const newSkills = [...(profile.skills || [])];
+                        newSkills.splice(index, 1);
+                        updateProfileField("skills", newSkills);
+                      }}
+                      className="text-red-400 hover:text-red-600 font-bold"
+                    >×</button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "cv" && (
+          <div className="space-y-6">
+            <h3 className="font-semibold text-[#102C26]">Resume / CV</h3>
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed border-[#e8d0b0] rounded-2xl p-12 flex flex-col items-center justify-center gap-4 hover:bg-[#fcf8f2] transition-colors cursor-pointer group
+                ${uploading ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <div className="w-16 h-16 rounded-full bg-[#F7E7CE] flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                {uploading ? "⏳" : "📄"}
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-[#102C26]">
+                  {uploading ? "Parsing your CV with AI..." : "Click to upload or drag and drop"}
+                </p>
+                <p className="text-xs text-[#6b8f85] mt-1">PDF Only (Max 5MB)</p>
+              </div>
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".pdf"
+                className="hidden" 
+                disabled={uploading}
+              />
+            </div>
+            <p className="text-xs text-center text-[#6b8f85]">
+              Using AI, we will automatically extract your details to fill your profile.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
