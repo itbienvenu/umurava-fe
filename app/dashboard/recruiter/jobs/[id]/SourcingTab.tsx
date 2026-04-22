@@ -40,6 +40,34 @@ const SYSTEM_FIELDS = [
 
 type SourcingMode = "csv" | "cv";
 
+interface CsvRowResult {
+  row_number: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  success: boolean;
+  applicantId?: string;
+  error?: {
+    message: string;
+  };
+}
+
+interface CsvSourcingResult {
+  type: 'csv';
+  total: number;
+  imported: number;
+  failed: number;
+  results: CsvRowResult[];
+}
+
+interface CvSourcingResult {
+  type: 'cv';
+  message: string;
+  count: number;
+}
+
+type SourcingResult = CsvSourcingResult | CvSourcingResult;
+
 export default function SourcingTab({ jobId }: SourcingTabProps) {
   const [mode, setMode] = useState<SourcingMode>("cv");
   
@@ -54,19 +82,31 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
   
   // Global States
   const [isUploading, setIsUploading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<SourcingResult | null>(null);
   const [error, setError] = useState("");
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+    // Check file size
+    if (selectedFile.size > MAX_SIZE) {
+      setError(`File is too large (${(selectedFile.size / 1024 / 1024).toFixed(1)}MB). Max size is 10MB.`);
+      e.target.value = "";
+      return;
+    }
+
+    // Always reset CSV-specific state when a new file is selected
     setFile(selectedFile);
+    setHeaders([]);
+    setMapping({});
     setError("");
     setResult(null);
 
     // If it's a CSV, try to extract headers simple way
-    if (selectedFile.name.endsWith(".csv")) {
+    if (selectedFile.name.toLowerCase().endsWith(".csv")) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target?.result as string;
@@ -88,23 +128,53 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
         }
       };
       reader.readAsText(selectedFile.slice(0, 5000)); // Read first 5KB
-    } else {
-      setHeaders([]);
     }
+
+    // Reset input value to allow selecting same file again
+    e.target.value = "";
   };
 
   const handleCvFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const pdfs = files.filter(f => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"));
-    
-    if (pdfs.length < files.length) {
-      setError("Only PDF files are allowed for CV sourcing.");
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    let errorMsg = "";
+
+    // 1. Validate file types
+    const pdfs = selectedFiles.filter(f => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"));
+    if (pdfs.length < selectedFiles.length) {
+      errorMsg = "Only PDF files are allowed for CV sourcing.";
+    }
+
+    // 2. Validate file sizes
+    const validSizePdfs = pdfs.filter(f => f.size <= MAX_SIZE);
+    if (validSizePdfs.length < pdfs.length) {
+      const tooLarge = pdfs.filter(f => f.size > MAX_SIZE).map(f => f.name);
+      errorMsg = `Files exceeding 10MB limit: ${tooLarge.join(", ")}`;
+    }
+
+    if (errorMsg) {
+      setError(errorMsg);
     } else {
       setError("");
     }
-    
-    setCvFiles(prev => [...prev, ...pdfs]);
-    setResult(null);
+
+    // 3. Filter out duplicates (based on name and size)
+    const nonDuplicates = validSizePdfs.filter(vf => 
+      !cvFiles.some(pf => pf.name === vf.name && pf.size === vf.size)
+    );
+
+    if (nonDuplicates.length > 0) {
+      setCvFiles(prev => [...prev, ...nonDuplicates]);
+      setResult(null);
+    } else if (validSizePdfs.length > 0 && !errorMsg) {
+      // All selected valid files were already in the list
+      setError("Selected files are already in the list.");
+    }
+
+    // 4. Reset input to allow re-selecting the same file if needed
+    e.target.value = "";
   };
 
   const removeCvFile = (index: number) => {
@@ -143,7 +213,7 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
         body: formData,
       });
 
-      const data = await ApiError.handle(res) as any;
+      const data = await ApiError.handle(res) as { success: boolean, data: Omit<CsvSourcingResult, 'type'> };
       setResult({ type: 'csv', ...data.data });
     } catch (err: any) {
       setError(err.message || "Failed to import candidates");
@@ -174,7 +244,7 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
       });
 
       // Backend returns 202 Accepted immediately
-      const data = await ApiError.handle(res) as any;
+      const data = await ApiError.handle(res) as { success: boolean, message?: string };
       setResult({ 
         type: 'cv', 
         message: data.message || "Batch upload started successfully!",
@@ -234,7 +304,7 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#e8d0b0]">
-                    {result.results.slice(0, 20).map((r: any, i: number) => (
+                    {result.results.slice(0, 20).map((r, i) => (
                       <tr key={i} className={r.success ? "bg-white" : "bg-red-50/30"}>
                         <td className="px-4 py-3 text-gray-500">{r.row_number}</td>
                         <td className="px-4 py-3">
@@ -301,14 +371,16 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
       <div className="flex p-1 bg-[#F7E7CE]/20 rounded-2xl border border-[#e8d0b0] w-fit">
         <button
           onClick={() => { setMode("cv"); setError(""); }}
-          className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${mode === "cv" ? "bg-[#102C26] text-[#F7E7CE] shadow-md" : "text-[#6b8f85] hover:text-[#102C26]"}`}
+          disabled={isUploading}
+          className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${mode === "cv" ? "bg-[#102C26] text-[#F7E7CE] shadow-md" : "text-[#6b8f85] hover:text-[#102C26]"}`}
         >
           <FilePdf size={18} weight={mode === "cv" ? "fill" : "regular"} />
           Batch CV Upload
         </button>
         <button
           onClick={() => { setMode("csv"); setError(""); }}
-          className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${mode === "csv" ? "bg-[#102C26] text-[#F7E7CE] shadow-md" : "text-[#6b8f85] hover:text-[#102C26]"}`}
+          disabled={isUploading}
+          className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${mode === "csv" ? "bg-[#102C26] text-[#F7E7CE] shadow-md" : "text-[#6b8f85] hover:text-[#102C26]"}`}
         >
           <Table size={18} weight={mode === "csv" ? "fill" : "regular"} />
           CSV/Excel Import
@@ -327,7 +399,8 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
               multiple
               accept=".pdf,application/pdf"
               onChange={handleCvFilesChange}
-              className="absolute inset-0 opacity-0 cursor-pointer z-10"
+              disabled={isUploading}
+              className={`absolute inset-0 opacity-0 z-10 ${isUploading ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             />
             <div className="w-20 h-20 bg-white rounded-3xl shadow-md flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 text-[#102C26]">
               <FolderOpen size={40} weight="duotone" />
@@ -345,7 +418,8 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                 </h3>
                 <button 
                   onClick={() => setCvFiles([])}
-                  className="text-xs text-red-500 font-medium hover:underline"
+                  disabled={isUploading}
+                  className="text-xs text-red-500 font-medium hover:underline disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
                 >
                   Clear All
                 </button>
@@ -363,7 +437,8 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                     </div>
                     <button 
                       onClick={() => removeCvFile(i)}
-                      className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                      disabled={isUploading}
+                      className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       <X size={14} weight="bold" />
                     </button>
@@ -373,7 +448,7 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
 
               <div className="mt-8 pt-6 border-t border-gray-100">
                 <button
-                  onClick={handleCvBatchUpload}
+                  onClick={handleImport}
                   disabled={isUploading}
                   className="w-full bg-[#102C26] text-[#F7E7CE] py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                 >
@@ -408,7 +483,8 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
               type="file"
               accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
               onChange={handleFileChange}
-              className="absolute inset-0 opacity-0 cursor-pointer z-10"
+              disabled={isUploading}
+              className={`absolute inset-0 opacity-0 z-10 ${isUploading ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             />
             <div className="w-20 h-20 bg-white rounded-3xl shadow-md flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 text-[#102C26]">
               <Table size={40} weight="duotone" />
@@ -439,7 +515,8 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                       <select
                         value={mapping[field.id] || ""}
                         onChange={(e) => setMapping(prev => ({ ...prev, [field.id]: e.target.value }))}
-                        className="border border-[#e8d0b0] rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#102C26] transition-shadow shadow-sm"
+                        disabled={isUploading}
+                        className="border border-[#e8d0b0] rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#102C26] transition-shadow shadow-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
                       >
                         <option value="">-- Select Column --</option>
                         {headers.map(h => <option key={h} value={h}>{h}</option>)}
@@ -450,7 +527,8 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                         placeholder="Enter column name..."
                         value={mapping[field.id] || ""}
                         onChange={(e) => setMapping(prev => ({ ...prev, [field.id]: e.target.value }))}
-                        className="border border-[#e8d0b0] rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#102C26] transition-shadow shadow-sm"
+                        disabled={isUploading}
+                        className="border border-[#e8d0b0] rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#102C26] transition-shadow shadow-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
                       />
                     )}
                   </div>
@@ -463,13 +541,14 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                     type="checkbox"
                     checked={skipInvalid}
                     onChange={(e) => setSkipInvalid(e.target.checked)}
-                    className="w-5 h-5 rounded-md border-[#e8d0b0] text-[#102C26] focus:ring-[#102C26] accent-[#102C26]"
+                    disabled={isUploading}
+                    className="w-5 h-5 rounded-md border-[#e8d0b0] text-[#102C26] focus:ring-[#102C26] accent-[#102C26] disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <span className="text-sm font-medium text-[#102C26] group-hover:opacity-80">Skip invalid rows</span>
                 </label>
 
                 <button
-                  onClick={handleCsvImport}
+                  onClick={handleImport}
                   disabled={isUploading}
                   className="bg-[#102C26] text-[#F7E7CE] px-10 py-3.5 rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 flex items-center gap-2 min-w-[180px] justify-center"
                 >
