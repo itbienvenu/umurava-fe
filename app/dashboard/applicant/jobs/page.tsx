@@ -30,7 +30,7 @@ export default function JobsPage() {
 
   const filteredJobs = jobs.filter(job => 
     job.title.toLowerCase().includes(search.toLowerCase()) ||
-    job.company.name.toLowerCase().includes(search.toLowerCase()) ||
+    (job.company?.name?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
     job.skills?.some(s => s.name.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -89,12 +89,14 @@ export default function JobsPage() {
               <div className="flex justify-between items-start mb-4">
                 <div className="w-12 h-12 bg-[#F7E7CE] rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">🏢</div>
                 <span className="bg-[#102C26]/5 text-[#102C26] px-3 py-1 rounded-full text-[10px] font-bold uppercase">
-                  {job.employment_type.replace('_', ' ')}
+                  {job.employment_type.replaceAll('_', ' ')}
                 </span>
               </div>
               
               <h3 className="font-bold text-[#102C26] text-lg mb-1">{job.title}</h3>
-              <p className="text-[#6b8f85] text-sm mb-4">{job.company.name} • {job.company.location.city}, {job.company.location.country}</p>
+              <p className="text-[#6b8f85] text-sm mb-4">
+                {job.company?.name ?? 'Unknown Company'} • {job.company?.location?.city ?? 'Unknown City'}, {job.company?.location?.country ?? 'Unknown Country'}
+              </p>
               
               <div className="flex flex-wrap gap-2 mb-6">
                 {job.skills?.slice(0, 4).map(skill => (
@@ -109,7 +111,7 @@ export default function JobsPage() {
               
               <div className="flex items-center justify-between pt-4 border-t border-[#fcf8f2]">
                 <span className="text-sm font-bold text-[#102C26]">
-                  {job.seniority_level.toUpperCase()} LEVEL
+                  {job.seniority_level.replaceAll('_', ' ').toUpperCase()} LEVEL
                 </span>
                 <Link 
                   href={`/dashboard/applicant/jobs/${job._id}`}

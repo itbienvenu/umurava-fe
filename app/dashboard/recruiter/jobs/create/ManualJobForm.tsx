@@ -132,8 +132,10 @@ export default function ManualJobForm() {
   function removeItem(collection: any[], index: number, path: string) {
     const updated = collection.filter((_, i) => i !== index);
     const keys = path.split('.');
+
     setFormData(prev => {
-      const newState = { ...prev };
+      const newState = structuredClone(prev);
+      const keys = path.split('.');
       let current: any = newState;
       for (let i = 0; i < keys.length - 1; i++) {
         current = current[keys[i]];
@@ -157,8 +159,14 @@ export default function ManualJobForm() {
           body: JSON.stringify(formData),
         }
       );
-      const data = await ApiError.handle(res) as { data: { _id: string } };
-      router.push(`/dashboard/recruiter/jobs/${data.data._id}`);
+      const data = await ApiError.handle(res) as { data: { _id?: string; insertedId?: string } };
+      const jobId = data.data._id || data.data.insertedId;
+
+      if (jobId) {
+        router.push(`/dashboard/recruiter/jobs/${jobId}`);
+      } else {
+        throw new Error("API did not return a job ID.");
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -259,9 +267,9 @@ export default function ManualJobForm() {
             <div>
               <label className={labelClass}>Languages</label>
               <div className="flex flex-wrap gap-2 mb-2">
-                {formData.languages.map((l, i) => (
-                  <span key={i} className={pillClass}>
-                    {l} <button type="button" onClick={() => removeItem(formData.languages, i, "languages")}>✕</button>
+                {formData.languages.map((l) => (
+                  <span key={l} className={pillClass}>
+                    {l} <button type="button" onClick={() => removeItem(formData.languages, formData.languages.indexOf(l), "languages")}>✕</button>
                   </span>
                 ))}
               </div>
@@ -272,6 +280,7 @@ export default function ManualJobForm() {
                   onChange={e => setNewItem({ ...newItem, language: e.target.value })}
                   placeholder="e.g. French"
                   className={inputClass}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem('language'))}
                 />
                 <button type="button" onClick={() => addItem('language')} className="bg-[#102C26] text-white px-4 rounded-xl">+</button>
               </div>
@@ -350,9 +359,9 @@ export default function ManualJobForm() {
             <div>
               <label className={labelClass}>Secondary Domains</label>
               <div className="flex flex-wrap gap-2 mb-2">
-                {formData.domain.secondary.map((d, i) => (
-                  <span key={i} className={pillClass}>
-                    {d} <button type="button" onClick={() => removeItem(formData.domain.secondary, i, "domain.secondary")}>✕</button>
+                {formData.domain.secondary.map((d) => (
+                  <span key={d} className={pillClass}>
+                    {d} <button type="button" onClick={() => removeItem(formData.domain.secondary, formData.domain.secondary.indexOf(d), "domain.secondary")}>✕</button>
                   </span>
                 ))}
               </div>
@@ -387,7 +396,10 @@ export default function ManualJobForm() {
                 <input
                   type="number"
                   value={formData.requirements.experience.min_years}
-                  onChange={e => setFormData({ ...formData, requirements: { ...formData.requirements, experience: { ...formData.requirements.experience, min_years: parseInt(e.target.value) } } })}
+                  onChange={e => {
+                    const val = e.target.value ? parseInt(e.target.value) : 0;
+                    setFormData({ ...formData, requirements: { ...formData.requirements, experience: { ...formData.requirements.experience, min_years: isNaN(val) ? 0 : Math.max(0, val) } } });
+                  }}
                   className={inputClass}
                 />
               </div>
@@ -397,7 +409,10 @@ export default function ManualJobForm() {
                   type="number"
                   placeholder="Optional"
                   value={formData.requirements.experience.max_years ?? ""}
-                  onChange={e => setFormData({ ...formData, requirements: { ...formData.requirements, experience: { ...formData.requirements.experience, max_years: e.target.value ? parseInt(e.target.value) : null } } })}
+                  onChange={e => {
+                    const val = e.target.value ? parseInt(e.target.value) : null;
+                    setFormData({ ...formData, requirements: { ...formData.requirements, experience: { ...formData.requirements.experience, max_years: (val === null || isNaN(val)) ? null : Math.max(0, val) } } });
+                  }}
                   className={inputClass}
                 />
               </div>
@@ -405,9 +420,9 @@ export default function ManualJobForm() {
             <div>
               <label className={labelClass}>Target Roles</label>
               <div className="flex flex-wrap gap-2 mb-2">
-                {formData.requirements.experience.roles.map((r, i) => (
-                  <span key={i} className={pillClass}>
-                    {r} <button type="button" onClick={() => removeItem(formData.requirements.experience.roles, i, "requirements.experience.roles")}>✕</button>
+                {formData.requirements.experience.roles.map((r) => (
+                  <span key={r} className={pillClass}>
+                    {r} <button type="button" onClick={() => removeItem(formData.requirements.experience.roles, formData.requirements.experience.roles.indexOf(r), "requirements.experience.roles")}>✕</button>
                   </span>
                 ))}
               </div>
@@ -418,6 +433,7 @@ export default function ManualJobForm() {
                   onChange={e => setNewItem({ ...newItem, role: e.target.value })}
                   placeholder="e.g. Backend Engineer"
                   className={inputClass}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem('role'))}
                 />
                 <button type="button" onClick={() => addItem('role')} className="bg-[#102C26] text-white px-4 rounded-xl">+</button>
               </div>
@@ -432,9 +448,15 @@ export default function ManualJobForm() {
                 <select
                   value={edu.level}
                   onChange={e => {
-                    const newEdu = [...formData.requirements.education];
-                    newEdu[idx].level = e.target.value;
-                    setFormData({ ...formData, requirements: { ...formData.requirements, education: newEdu } });
+                    setFormData(prev => ({
+                      ...prev,
+                      requirements: {
+                        ...prev.requirements,
+                        education: prev.requirements.education.map((edu, i) =>
+                          i === idx ? { ...edu, level: e.target.value } : edu
+                        )
+                      }
+                    }));
                   }}
                   className={inputClass}
                 >
@@ -455,17 +477,17 @@ export default function ManualJobForm() {
           <span className="w-10 h-10 rounded-xl bg-[#F7E7CE] flex items-center justify-center text-xl shadow-inner">🛠️</span>
           Hard & Soft Skills
         </h2>
-        
+
         <div className="space-y-8">
           {/* Hard Skills */}
           <div>
             <label className={labelClass}>Hard Skills</label>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-              {formData.skills.map((skill, index) => (
-                <div key={index} className="bg-[#F7E7CE]/20 border border-[#e8d0b0] p-3 rounded-xl flex flex-col gap-1 relative group">
+              {formData.skills.map((skill) => (
+                <div key={skill.name} className="bg-[#F7E7CE]/20 border border-[#e8d0b0] p-3 rounded-xl flex flex-col gap-1 relative group">
                   <span className="font-bold text-sm text-[#102C26]">{skill.name}</span>
-                  <span className="text-[10px] text-[#6b8f85] uppercase tracking-tighter">{skill.category.replace('_', ' ')} • {skill.level}</span>
-                  <button type="button" onClick={() => removeItem(formData.skills, index, "skills")} className="absolute top-2 right-2 text-[#102C26] opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                  <span className="text-[10px] text-[#6b8f85] uppercase tracking-tighter">{skill.category.replaceAll('_', ' ')} • {skill.level}</span>
+                  <button type="button" onClick={() => removeItem(formData.skills, formData.skills.indexOf(skill), "skills")} className="absolute top-2 right-2 text-[#102C26] opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                 </div>
               ))}
             </div>
@@ -479,6 +501,7 @@ export default function ManualJobForm() {
                     value={newItem.skill.name}
                     onChange={e => setNewItem({ ...newItem, skill: { ...newItem.skill, name: e.target.value } })}
                     className={inputClass}
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem('skill'))}
                   />
                 </div>
                 <select
@@ -507,9 +530,9 @@ export default function ManualJobForm() {
             <div>
               <label className={labelClass}>Soft Skills</label>
               <div className="flex flex-wrap gap-2 mb-4">
-                {formData.soft_skills.map((s, i) => (
-                  <span key={i} className={pillClass}>
-                    {s.name} <button type="button" onClick={() => removeItem(formData.soft_skills, i, "soft_skills")}>✕</button>
+                {formData.soft_skills.map((s) => (
+                  <span key={s.name} className={pillClass}>
+                    {s.name} <button type="button" onClick={() => removeItem(formData.soft_skills, formData.soft_skills.indexOf(s), "soft_skills")}>✕</button>
                   </span>
                 ))}
               </div>
@@ -520,6 +543,7 @@ export default function ManualJobForm() {
                   onChange={e => setNewItem({ ...newItem, softSkill: { ...newItem.softSkill, name: e.target.value } })}
                   placeholder="e.g. Communication"
                   className={inputClass}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem('softSkill'))}
                 />
                 <button type="button" onClick={() => addItem('softSkill')} className="bg-[#102C26] text-white px-4 rounded-xl">+</button>
               </div>
@@ -529,9 +553,9 @@ export default function ManualJobForm() {
             <div>
               <label className={labelClass}>Required Resources</label>
               <div className="flex flex-wrap gap-2 mb-4">
-                {formData.resources.map((r, i) => (
-                  <span key={i} className={pillClass}>
-                    {r.name} <button type="button" onClick={() => removeItem(formData.resources, i, "resources")}>✕</button>
+                {formData.resources.map((r) => (
+                  <span key={r.name} className={pillClass}>
+                    {r.name} <button type="button" onClick={() => removeItem(formData.resources, formData.resources.indexOf(r), "resources")}>✕</button>
                   </span>
                 ))}
               </div>
@@ -542,6 +566,7 @@ export default function ManualJobForm() {
                   onChange={e => setNewItem({ ...newItem, resource: { ...newItem.resource, name: e.target.value } })}
                   placeholder="e.g. Laptop, Git"
                   className={inputClass}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem('resource'))}
                 />
                 <button type="button" onClick={() => addItem('resource')} className="bg-[#102C26] text-white px-4 rounded-xl">+</button>
               </div>
@@ -582,11 +607,11 @@ export default function ManualJobForm() {
           <div>
             <label className={labelClass}>Responsibilities</label>
             <ul className="space-y-2 mb-4">
-              {formData.responsibilities.map((r, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-[#102C26] bg-[#F7E7CE]/10 p-2 rounded-lg">
+              {formData.responsibilities.map((r) => (
+                <li key={r} className="flex items-start gap-2 text-sm text-[#102C26] bg-[#F7E7CE]/10 p-2 rounded-lg">
                   <span className="mt-1">✅</span>
                   <span className="flex-1">{r}</span>
-                  <button type="button" onClick={() => removeItem(formData.responsibilities, i, "responsibilities")} className="text-red-400 hover:text-red-600">✕</button>
+                  <button type="button" onClick={() => removeItem(formData.responsibilities, formData.responsibilities.indexOf(r), "responsibilities")} className="text-red-400 hover:text-red-600">✕</button>
                 </li>
               ))}
             </ul>

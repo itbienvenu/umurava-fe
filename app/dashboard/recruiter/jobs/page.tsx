@@ -158,7 +158,7 @@ export default function MyJobsPage() {
 
                 {job.metadata?.created_at && (
                   <p className="text-xs text-[#6b8f85]">
-                    Created {new Date(job.metadata.created_at).toLocaleDateString()}
+                    Created {new Date(job.metadata.created_at).toLocaleDateString('en-US')}
                   </p>
                 )}
               </div>

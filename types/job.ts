@@ -3,48 +3,48 @@ export interface Job {
   title: string;
   employment_type: string;
   seniority_level: string;
-  company: {
+  company?: {
     name: string;
-    location: {
+    location?: {
       city: string;
       country: string;
     };
   };
-  description: {
+  description?: {
     raw: string;
     summary: string;
   };
-  requirements: {
+  requirements?: {
     experience: {
       min_years: number;
       max_years: number | null;
       roles: string[];
     };
-    education: {
+    education?: {
       level: string;
       fields: string[];
     }[];
-    certifications: string[];
+    certifications?: string[];
   };
-  skills: {
+  skills?: {
     name: string;
     category: string;
     required: boolean;
     level: string;
   }[];
-  soft_skills: {
+  soft_skills?: {
     name: string;
   }[];
-  resources: {
+  resources?: {
     name: string;
     required: boolean;
   }[];
-  domain: {
+  domain?: {
     primary: string;
     secondary: string[];
   };
-  responsibilities: string[];
-  languages: string[];
+  responsibilities?: string[];
+  languages?: string[];
   travel_required: boolean;
   metadata: {
     status: string;

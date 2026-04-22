@@ -82,7 +82,7 @@ export default function ApplicationsPage() {
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-0.5">
                     <p className="text-sm font-medium text-[#4a635c]">{app.job.company.name}</p>
                     <span className="text-[#e8d0b0] md:block hidden">•</span>
-                    <p className="text-xs text-[#6b8f85] uppercase tracking-wider font-bold">Applied {new Date(app.appliedAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-[#6b8f85] uppercase tracking-wider font-bold">Applied {new Date(app.appliedAt).toLocaleDateString('en-US')}</p>
                   </div>
                 </div>
               </div>

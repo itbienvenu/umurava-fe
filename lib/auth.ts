@@ -72,7 +72,9 @@ export async function refreshAccessToken(): Promise<string | null> {
 
 export async function authFetch(input: RequestInfo, init: RequestInit = {}): Promise<Response> {
   const { accessToken } = getTokens();
-  console.log(`[authFetch] Initiating request to: ${input}`, { hasToken: !!accessToken });
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[authFetch] Initiating request to: ${input}`, { hasToken: !!accessToken });
+  }
 
   const makeRequest = (token: string | null) => {
     const headers = new Headers(init.headers);
@@ -89,16 +91,24 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}): Pro
   };
 
   let res = await makeRequest(accessToken);
-  console.log(`[authFetch] Response status ${res.status} from ${input}`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[authFetch] Response status ${res.status} from ${input}`);
+  }
 
   if (res.status === 401) {
-    console.warn(`[authFetch] Unauthorized (401) response from ${input}. Attempting token refresh...`);
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[authFetch] Unauthorized (401) response from ${input}. Attempting token refresh...`);
+    }
     const newToken = await refreshAccessToken();
     if (newToken) {
-      console.log(`[authFetch] Token refreshed successfully. Retrying request to ${input}...`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[authFetch] Token refreshed successfully. Retrying request to ${input}...`);
+      }
       res = await makeRequest(newToken);
     } else {
-       console.error(`[authFetch] Token refresh failed for ${input}.`);
+       if (process.env.NODE_ENV === 'development') {
+         console.error(`[authFetch] Token refresh failed for ${input}.`);
+       }
     }
   }
 

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
 import { getJobById } from "@/lib/jobs";
 import { submitApplication } from "@/lib/applications";
 import { Job } from "@/types/job";
@@ -9,7 +8,6 @@ import Link from "next/link";
 
 export default function JobDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -102,9 +100,9 @@ export default function JobDetailsPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <h1 className="text-3xl font-bold text-[#102C26] mb-2">{job.title}</h1>
                   <p className="text-[#6b8f85] flex items-center gap-2">
-                    <span className="font-bold text-[#102C26]">{job.company.name}</span>
+                    <span className="font-bold text-[#102C26]">{job.company?.name ?? 'Unknown Company'}</span>
                     <span>•</span>
-                    <span>{job.company.location.city}, {job.company.location.country}</span>
+                    <span>{job.company?.location?.city ?? 'Unknown City'}, {job.company?.location?.country ?? 'Unknown Country'}</span>
                   </p>
                 </div>
               </div>
@@ -116,17 +114,17 @@ export default function JobDetailsPage({ params }: { params: Promise<{ id: strin
                   Apply for this position
                 </button>
                 <p className="text-[10px] text-center text-[#6b8f85] uppercase tracking-wider font-bold">
-                  Posted {new Date(job.metadata.created_at).toLocaleDateString()}
+                  Posted {new Date(job.metadata.created_at).toLocaleDateString('en-US')}
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-3 pt-6 border-t border-[#fcf8f2]">
               <div className="bg-[#fcf8f2] px-4 py-2 rounded-xl text-xs font-semibold text-[#102C26]">
-                💼 {job.employment_type.replace('_', ' ').toUpperCase()}
+                💼 {job.employment_type?.replaceAll('_', ' ').toUpperCase() ?? 'N/A'}
               </div>
               <div className="bg-[#fcf8f2] px-4 py-2 rounded-xl text-xs font-semibold text-[#102C26]">
-                📈 {job.seniority_level.toUpperCase()} LEVEL
+                📈 {job.seniority_level?.replaceAll('_', ' ').toUpperCase() ?? 'N/A'} LEVEL
               </div>
               <div className="bg-[#fcf8f2] px-4 py-2 rounded-xl text-xs font-semibold text-[#102C26]">
                 🌍 {job.travel_required ? 'TRAVEL REQUIRED' : 'NO TRAVEL'}
@@ -138,8 +136,8 @@ export default function JobDetailsPage({ params }: { params: Promise<{ id: strin
           <section className="bg-white rounded-3xl border border-[#e8d0b0] p-8 shadow-sm">
             <h2 className="text-xl font-bold text-[#102C26] mb-6">About the Role</h2>
             <div className="prose prose-slate max-w-none text-[#4a635c] leading-relaxed">
-              <p className="mb-4">{job.description.summary}</p>
-              <div className="whitespace-pre-wrap">{job.description.raw}</div>
+              <p className="mb-4">{job.description?.summary ?? 'No summary available.'}</p>
+              <div className="whitespace-pre-wrap">{job.description?.raw ?? 'No full description available.'}</div>
             </div>
           </section>
 
@@ -164,25 +162,27 @@ export default function JobDetailsPage({ params }: { params: Promise<{ id: strin
             
             <div className="space-y-8">
               {/* Experience */}
-              <div>
-                <h3 className="text-sm font-bold text-[#102C26] uppercase tracking-wider mb-4">Experience</h3>
-                <div className="bg-[#fcf8f2] p-4 rounded-2xl flex items-center justify-between">
-                  <span className="text-[#4a635c]">Minimum Years Required</span>
-                  <span className="font-bold text-[#102C26] text-lg">{job.requirements.experience.min_years}+ years</span>
+              {job.requirements?.experience && (
+                <div>
+                  <h3 className="text-sm font-bold text-[#102C26] uppercase tracking-wider mb-4">Experience</h3>
+                  <div className="bg-[#fcf8f2] p-4 rounded-2xl flex items-center justify-between">
+                    <span className="text-[#4a635c]">Minimum Years Required</span>
+                    <span className="font-bold text-[#102C26] text-lg">{job.requirements.experience.min_years}+ years</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Education */}
               <div>
                 <h3 className="text-sm font-bold text-[#102C26] uppercase tracking-wider mb-4">Education</h3>
                 <div className="space-y-2">
-                  {job.requirements.education?.map((edu, i) => (
+                  {job.requirements?.education?.map((edu, i) => (
                     <div key={i} className="bg-[#fcf8f2] p-4 rounded-2xl">
                       <p className="font-bold text-[#102C26] capitalize">{edu.level}'s Degree</p>
                       <p className="text-xs text-[#6b8f85]">{edu.fields?.join(', ')}</p>
                     </div>
                   ))}
-                  {(!job.requirements.education || job.requirements.education.length === 0) && (
+                  {(!job.requirements?.education || job.requirements.education.length === 0) && (
                     <p className="text-sm text-[#6b8f85]">No specific education requirements listed.</p>
                   )}
                 </div>
@@ -235,11 +235,11 @@ export default function JobDetailsPage({ params }: { params: Promise<{ id: strin
             <div className="space-y-6">
               <div>
                 <p className="text-[10px] text-[#F7E7CE]/60 uppercase tracking-widest mb-1 italic">Role Primary Domain</p>
-                <p className="font-bold text-lg capitalize">{job.domain.primary.replace('_', ' ')}</p>
+                <p className="font-bold text-lg capitalize">{job.domain?.primary?.replaceAll('_', ' ') ?? 'N/A'}</p>
               </div>
               <div>
                 <p className="text-[10px] text-[#F7E7CE]/60 uppercase tracking-widest mb-1 italic">Secondary Focus</p>
-                <p className="text-sm">{job.domain.secondary?.join(', ') || 'N/A'}</p>
+                <p className="text-sm">{job.domain?.secondary?.join(', ') || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-[10px] text-[#F7E7CE]/60 uppercase tracking-widest mb-1 italic">Preferred Languages</p>

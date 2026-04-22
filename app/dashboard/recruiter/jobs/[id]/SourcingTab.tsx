@@ -141,7 +141,7 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e8d0b0]">
-                {result.results.map((r: any, i: number) => (
+                {result.results.slice(0, 20).map((r: any, i: number) => (
                   <tr key={i} className={r.success ? "bg-white" : "bg-red-50/30"}>
                     <td className="px-4 py-3 text-gray-500">{r.row_number}</td>
                     <td className="px-4 py-3">
@@ -155,13 +155,13 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">
                       {r.success ? (
-                        <span className="text-green-600">ID: ...{r.applicantId?.substring(r.applicantId.length - 6)}</span>
+                        <span className="text-green-600">ID: ...{r.applicantId?.slice(-6)}</span>
                       ) : (
                         <span className="text-red-500">{r.error?.message}</span>
                       )}
                     </td>
                   </tr>
-                )).slice(0, 20)}
+                ))}
                 {result.results.length > 20 && (
                   <tr>
                     <td colSpan={4} className="px-4 py-3 text-center text-gray-400 italic">

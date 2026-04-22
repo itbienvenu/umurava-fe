@@ -3,12 +3,11 @@
 import { useState, useEffect, use } from "react";
 import { getApplicationById } from "@/lib/applications";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Application } from "@/types/application";
 
 export default function ApplicationDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
-  const [application, setApplication] = useState<any>(null);
+  const [application, setApplication] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,26 +92,26 @@ export default function ApplicationDetailsPage({ params }: { params: Promise<{ i
                     <circle 
                       cx="50" cy="50" r="45" 
                       fill="none" stroke="#102C26" strokeWidth="8"
-                      strokeDasharray={`${Math.round(screening_result?.final_score * 2.82)}, 282`}
+                      strokeDasharray={`${Math.round((screening_result?.final_score || 0) * 2.82)}, 282`}
                       strokeLinecap="round"
                       className="transition-all duration-1000 ease-out"
                       transform="rotate(-90 50 50)"
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-4xl font-black text-[#102C26]">{Math.round(screening_result?.final_score)}%</span>
+                    <span className="text-4xl font-black text-[#102C26]">{Math.round(screening_result?.final_score || 0)}%</span>
                     <span className="text-[10px] font-bold text-[#6b8f85] uppercase tracking-widest">Match Score</span>
                   </div>
                 </div>
 
                 <div className="flex-1 space-y-4 text-center md:text-left">
                   <h1 className="text-3xl font-black text-[#102C26]">{application.job.title}</h1>
-                  <p className="text-[#6b8f85] font-medium">{application.job.company.name} • Applied on {new Date(application.appliedAt).toLocaleDateString()}</p>
+                  <p className="text-[#6b8f85] font-medium">{application.job.company?.name ?? 'Unknown Company'} • Applied on {new Date(application.appliedAt).toLocaleDateString('en-US')}</p>
                   <div className="inline-block bg-[#102C26] text-[#F7E7CE] px-4 py-1 rounded-lg text-xs font-bold uppercase tracking-widest">
-                    Ranked #{screening_result?.rank}
+                    Ranked #{screening_result?.rank ?? 'N/A'}
                   </div>
                   <p className="text-sm text-[#4a635c] italic opacity-80 mt-4 leading-relaxed">
-                    "{screening_result?.recommendation}"
+                    "{screening_result?.recommendation || 'No specific AI recommendation available at this time.'}"
                   </p>
                 </div>
              </div>
@@ -129,13 +128,13 @@ export default function ApplicationDetailsPage({ params }: { params: Promise<{ i
               {Object.entries(breakdown).map(([key, value]: [string, any]) => (
                 <div key={key} className="space-y-2">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-[#102C26] font-medium capitalize">{key.replace('_', ' ')}</span>
-                    <span className="font-bold text-[#102C26]">{Math.round(value * 100)}%</span>
+                    <span className="text-[#102C26] font-medium capitalize">{key.replaceAll('_', ' ')}</span>
+                    <span className="font-bold text-[#102C26]">{Math.round((value || 0) * 100)}%</span>
                   </div>
                   <div className="w-full bg-[#fcf8f2] h-2 rounded-full overflow-hidden">
                     <div 
                       className="bg-[#102C26] h-full rounded-full transition-all duration-1000" 
-                      style={{ width: `${value * 100}%` }}
+                      style={{ width: `${(value || 0) * 100}%` }}
                     ></div>
                   </div>
                 </div>
@@ -193,11 +192,11 @@ export default function ApplicationDetailsPage({ params }: { params: Promise<{ i
                     <div className="w-12 h-12 bg-[#F7E7CE] rounded-xl flex items-center justify-center text-xl shrink-0">🏢</div>
                     <div>
                        <p className="font-bold text-[#102C26] leading-tight">{application.job.title}</p>
-                       <p className="text-xs text-[#6b8f85] mt-1">{application.job.seniority_level.toUpperCase()} • {application.job.employment_type.replace('_', ' ').toUpperCase()}</p>
+                       <p className="text-xs text-[#6b8f85] mt-1">{application.job.seniority_level?.toUpperCase() ?? 'N/A'} • {application.job.employment_type?.replaceAll('_', ' ').toUpperCase() ?? 'N/A'}</p>
                     </div>
                  </div>
                  <p className="text-sm text-[#6b8f85] leading-relaxed line-clamp-3">
-                    {application.job.description.summary}
+                    {application.job.description?.summary ?? 'No summary available.'}
                  </p>
                  <Link 
                     href={`/dashboard/applicant/jobs/${application.job._id}`}

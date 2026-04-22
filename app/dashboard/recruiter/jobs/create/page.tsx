@@ -28,8 +28,14 @@ export default function CreateJobPage() {
           body: JSON.stringify({ description }),
         }
       );
-      const data = await ApiError.handle(res) as { data: { insertedId: string } };
-      router.push(`/dashboard/recruiter/jobs/${data.data.insertedId}`);
+      const data = await ApiError.handle(res) as { data: { insertedId?: string; _id?: string } };
+      const jobId = data.data.insertedId || data.data._id;
+      
+      if (jobId) {
+        router.push(`/dashboard/recruiter/jobs/${jobId}`);
+      } else {
+        throw new Error("API did not return a job ID.");
+      }
     } catch (err) {
       if (err instanceof ApiError) setError(err.message);
       else setError("Internal server error. Please try again.");
@@ -50,6 +56,7 @@ export default function CreateJobPage() {
       {/* Mode Switcher */}
       <div className="flex bg-[#F7E7CE] border border-[#e8d0b0] p-1 rounded-2xl mb-8 w-fit">
         <button
+          type="button"
           onClick={() => setMode("ai")}
           className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all ${
             mode === "ai"
@@ -60,6 +67,7 @@ export default function CreateJobPage() {
           ✨ AI Parsing
         </button>
         <button
+          type="button"
           onClick={() => setMode("manual")}
           className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all ${
             mode === "manual"

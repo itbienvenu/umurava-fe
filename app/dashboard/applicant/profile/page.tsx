@@ -11,6 +11,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Profile State
@@ -28,17 +29,39 @@ export default function ProfilePage() {
     social_links: { linkedin: "", github: "", twitter: "" }
   });
 
+  // Local Form States for "Add New" sections
+  const [newExperience, setNewExperience] = useState({
+    role: "",
+    company: "",
+    location: "",
+    start_date: "",
+    end_date: ""
+  });
+
+  const [newEducation, setNewEducation] = useState({
+    institution: "",
+    degree: "",
+    major: "",
+    location: ""
+  });
+
+  const [newSkill, setNewSkill] = useState({
+    name: "",
+    level: "Beginner"
+  });
+
   useEffect(() => {
     async function fetchProfile() {
       try {
         setPageLoading(true);
-        console.log("Fetching profile...");
         const res = await getApplicantProfile();
-        console.log("Profile response received:", res);
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Profile fetched successfully:", res.success);
+        }
         
         if (res.success && res.data) {
-          // Fix: Check if fields are at the root of res.data or inside res.data.profile
-          const profileData = res.data.profile || res.data;
+          const profileData = res.data.profile;
           
           setProfile(prev => ({
             ...prev,
@@ -47,6 +70,14 @@ export default function ProfilePage() {
             social_links: {
               ...prev.social_links,
               ...(profileData.social_links || {})
+            },
+            availability: {
+              ...(prev.availability || {}),
+              ...(profileData.availability || {})
+            },
+            preferences: {
+              ...(prev.preferences || {}),
+              ...(profileData.preferences || {})
             }
           }));
         }
@@ -63,12 +94,15 @@ export default function ProfilePage() {
     fetchProfile();
   }, []);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processFile = async (file: File) => {
     if (file.type !== "application/pdf") {
       setError("Please upload a PDF file.");
+      return;
+    }
+
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_SIZE) {
+      setError("File is too large. Maximum size is 10MB.");
       return;
     }
 
@@ -77,8 +111,23 @@ export default function ProfilePage() {
       setError(null);
       const res = await uploadCV(file);
       if (res.success) {
-        const profileData = res.data.profile || res.data;
-        setProfile(prev => ({ ...prev, ...profileData }));
+        const profileData = res.data.profile;
+        setProfile(prev => ({ 
+          ...prev, 
+          ...profileData,
+          social_links: {
+            ...prev.social_links,
+            ...(profileData.social_links || {})
+          },
+          availability: {
+            ...(prev.availability || {}),
+            ...(profileData.availability || {})
+          },
+          preferences: {
+            ...(prev.preferences || {}),
+            ...(profileData.preferences || {})
+          }
+        }));
         setSuccess("CV parsed successfully! Please review your details across the tabs.");
         setActiveTab("personal"); // Switch to review details
       }
@@ -87,6 +136,29 @@ export default function ProfilePage() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!uploading) setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (uploading) return;
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
   };
 
   const handleSave = async () => {
@@ -246,38 +318,60 @@ export default function ProfilePage() {
             <div className="bg-[#fcf8f2] border border-[#e8d0b0] rounded-2xl p-6 space-y-4">
               <h4 className="text-sm font-bold text-[#102C26] uppercase italic">Add New Experience</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input id="new-exp-role" type="text" placeholder="Job Title" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
-                <input id="new-exp-company" type="text" placeholder="Company" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
-                <input id="new-exp-loc" type="text" placeholder="Location" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+                <input 
+                  type="text" 
+                  placeholder="Job Title" 
+                  value={newExperience.role}
+                  onChange={(e) => setNewExperience(prev => ({ ...prev, role: e.target.value }))}
+                  className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" 
+                />
+                <input 
+                  type="text" 
+                  placeholder="Company" 
+                  value={newExperience.company}
+                  onChange={(e) => setNewExperience(prev => ({ ...prev, company: e.target.value }))}
+                  className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" 
+                />
+                <input 
+                  type="text" 
+                  placeholder="Location" 
+                  value={newExperience.location}
+                  onChange={(e) => setNewExperience(prev => ({ ...prev, location: e.target.value }))}
+                  className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" 
+                />
                 <div className="flex gap-2">
-                  <input id="new-exp-start" type="text" placeholder="Start (YYYY-MM)" className="flex-1 bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
-                  <input id="new-exp-end" type="text" placeholder="End (or Present)" className="flex-1 bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+                  <input 
+                    type="text" 
+                    placeholder="Start (YYYY-MM)" 
+                    value={newExperience.start_date}
+                    onChange={(e) => setNewExperience(prev => ({ ...prev, start_date: e.target.value }))}
+                    className="flex-1 bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" 
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="End (or Present)" 
+                    value={newExperience.end_date}
+                    onChange={(e) => setNewExperience(prev => ({ ...prev, end_date: e.target.value }))}
+                    className="flex-1 bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" 
+                  />
                 </div>
               </div>
               <button 
                 onClick={() => {
-                  const role = (document.getElementById('new-exp-role') as HTMLInputElement).value;
-                  const company = (document.getElementById('new-exp-company') as HTMLInputElement).value;
-                  const start = (document.getElementById('new-exp-start') as HTMLInputElement).value;
-                  const end = (document.getElementById('new-exp-end') as HTMLInputElement).value;
-                  const loc = (document.getElementById('new-exp-loc') as HTMLInputElement).value;
-                  if (!role || !company) return;
-                  const newExp = { 
-                    role, 
-                    company, 
-                    start_date: start, 
-                    end_date: end === "Present" ? null : end, 
-                    location: loc, 
-                    is_current: end === "Present", 
+                  if (!newExperience.role || !newExperience.company) return;
+                  const expToAdd = { 
+                    role: newExperience.role, 
+                    company: newExperience.company, 
+                    start_date: newExperience.start_date, 
+                    end_date: newExperience.end_date === "Present" ? null : newExperience.end_date, 
+                    location: newExperience.location, 
+                    is_current: newExperience.end_date === "Present", 
                     technologies: [], 
                     description: "", 
                     work_type: "Full-time" 
                   };
-                  updateProfileField("experience", [...(profile.experience || []), newExp]);
-                  // Clear fields
-                  ['new-exp-role', 'new-exp-company', 'new-exp-start', 'new-exp-end', 'new-exp-loc'].forEach(id => {
-                    (document.getElementById(id) as HTMLInputElement).value = "";
-                  });
+                  updateProfileField("experience", [...(profile.experience || []), expToAdd]);
+                  setNewExperience({ role: "", company: "", location: "", start_date: "", end_date: "" });
                 }}
                 className="w-full bg-[#102C26] text-[#F7E7CE] py-2 rounded-xl text-xs font-bold hover:scale-[1.01] transition-all"
               >
@@ -384,20 +478,49 @@ export default function ProfilePage() {
             <div className="bg-[#fcf8f2] border border-[#e8d0b0] rounded-2xl p-6 space-y-4">
               <h4 className="text-sm font-bold text-[#102C26] uppercase italic">Add New Education</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input id="new-edu-inst" type="text" placeholder="Institution (e.g. MIT)" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
-                <input id="new-edu-degree" type="text" placeholder="Degree (e.g. Bachelors)" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
-                <input id="new-edu-major" type="text" placeholder="Major (e.g. CS)" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
-                <input id="new-edu-loc" type="text" placeholder="Location" className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+                <input 
+                  type="text" 
+                  placeholder="Institution (e.g. MIT)" 
+                  value={newEducation.institution}
+                  onChange={(e) => setNewEducation(prev => ({ ...prev, institution: e.target.value }))}
+                  className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" 
+                />
+                <input 
+                  type="text" 
+                  placeholder="Degree (e.g. Bachelors)" 
+                  value={newEducation.degree}
+                  onChange={(e) => setNewEducation(prev => ({ ...prev, degree: e.target.value }))}
+                  className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" 
+                />
+                <input 
+                  type="text" 
+                  placeholder="Major (e.g. CS)" 
+                  value={newEducation.major}
+                  onChange={(e) => setNewEducation(prev => ({ ...prev, major: e.target.value }))}
+                  className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" 
+                />
+                <input 
+                  type="text" 
+                  placeholder="Location" 
+                  value={newEducation.location}
+                  onChange={(e) => setNewEducation(prev => ({ ...prev, location: e.target.value }))}
+                  className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" 
+                />
               </div>
               <button 
                 onClick={() => {
-                  const institution = (document.getElementById('new-edu-inst') as HTMLInputElement).value;
-                  const degree = (document.getElementById('new-edu-degree') as HTMLInputElement).value;
-                  const major = (document.getElementById('new-edu-major') as HTMLInputElement).value;
-                  const loc = (document.getElementById('new-edu-loc') as HTMLInputElement).value;
-                  if (!institution || !degree) return;
-                  const newEdu = { institution, degree, major, location: loc, start_date: "", end_date: null, field_of_study: major };
-                  updateProfileField("education", [...(profile.education || []), newEdu]);
+                  if (!newEducation.institution || !newEducation.degree) return;
+                  const eduToAdd = { 
+                    institution: newEducation.institution, 
+                    degree: newEducation.degree, 
+                    major: newEducation.major, 
+                    location: newEducation.location, 
+                    start_date: "", 
+                    end_date: null, 
+                    field_of_study: newEducation.major 
+                  };
+                  updateProfileField("education", [...(profile.education || []), eduToAdd]);
+                  setNewEducation({ institution: "", degree: "", major: "", location: "" });
                 }}
                 className="w-full bg-[#102C26] text-[#F7E7CE] py-2 rounded-xl text-xs font-bold hover:scale-[1.01] transition-all"
               >
@@ -434,11 +557,21 @@ export default function ProfilePage() {
             <div className="bg-[#fcf8f2] border border-[#e8d0b0] rounded-2xl p-6 flex flex-wrap gap-4 items-end">
               <div className="flex-1 min-w-[200px] space-y-2">
                 <label className="text-[10px] font-bold text-[#6b8f85] uppercase">Skill Name</label>
-                <input id="new-skill-name" type="text" placeholder="e.g. React" className="w-full bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" />
+                <input 
+                  type="text" 
+                  placeholder="e.g. React" 
+                  value={newSkill.name}
+                  onChange={(e) => setNewSkill(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none" 
+                />
               </div>
               <div className="w-40 space-y-2">
                 <label className="text-[10px] font-bold text-[#6b8f85] uppercase">Level</label>
-                <select id="new-skill-level" className="w-full bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none">
+                <select 
+                  value={newSkill.level}
+                  onChange={(e) => setNewSkill(prev => ({ ...prev, level: e.target.value }))}
+                  className="w-full bg-white border border-[#e8d0b0] rounded-xl px-4 py-2 text-sm focus:outline-none"
+                >
                   <option value="Beginner">Beginner</option>
                   <option value="Intermediate">Intermediate</option>
                   <option value="Advanced">Advanced</option>
@@ -446,12 +579,10 @@ export default function ProfilePage() {
               </div>
               <button 
                 onClick={() => {
-                  const name = (document.getElementById('new-skill-name') as HTMLInputElement).value;
-                  const level = (document.getElementById('new-skill-level') as HTMLSelectElement).value;
-                  if (!name) return;
-                  const newSkill = { name, level, years_of_experience: 0 };
-                  updateProfileField("skills", [...(profile.skills || []), newSkill]);
-                  (document.getElementById('new-skill-name') as HTMLInputElement).value = "";
+                  if (!newSkill.name) return;
+                  const skillToAdd = { name: newSkill.name, level: newSkill.level, years_of_experience: 0 };
+                  updateProfileField("skills", [...(profile.skills || []), skillToAdd]);
+                  setNewSkill({ name: "", level: "Beginner" });
                 }}
                 className="bg-[#102C26] text-[#F7E7CE] px-8 py-2 rounded-xl text-sm font-bold h-[38px]"
               >
@@ -485,17 +616,22 @@ export default function ProfilePage() {
             <h3 className="font-semibold text-[#102C26]">Resume / CV</h3>
             <div 
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed border-[#e8d0b0] rounded-2xl p-12 flex flex-col items-center justify-center gap-4 hover:bg-[#fcf8f2] transition-colors cursor-pointer group
-                ${uploading ? "opacity-50 cursor-not-allowed" : ""}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center gap-4 hover:bg-[#fcf8f2] transition-all cursor-pointer group
+                ${uploading ? "opacity-50 cursor-not-allowed" : ""}
+                ${isDragging ? "border-[#102C26] bg-[#fcf8f2] scale-[1.02]" : "border-[#e8d0b0]"}`}
             >
-              <div className="w-16 h-16 rounded-full bg-[#F7E7CE] flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                {uploading ? "⏳" : "📄"}
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all
+                ${isDragging ? "bg-[#102C26] text-white" : "bg-[#F7E7CE] group-hover:scale-110"}`}>
+                {uploading ? "⏳" : isDragging ? "📥" : "📄"}
               </div>
               <div className="text-center">
                 <p className="text-sm font-medium text-[#102C26]">
-                  {uploading ? "Parsing your CV with AI..." : "Click to upload or drag and drop"}
+                  {uploading ? "Parsing your CV with AI..." : isDragging ? "Drop your PDF here" : "Click to upload or drag and drop"}
                 </p>
-                <p className="text-xs text-[#6b8f85] mt-1">PDF Only (Max 5MB)</p>
+                <p className="text-xs text-[#6b8f85] mt-1">PDF Only (Max 10MB)</p>
               </div>
               <input 
                 type="file" 

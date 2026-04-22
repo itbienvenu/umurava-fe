@@ -197,7 +197,7 @@ export default function ApplicationsPage() {
                         Applicant #{app.applicantId.slice(-6)}
                       </p>
                       <p className="text-xs text-[#6b8f85]">
-                        Applied {new Date(app.appliedAt).toLocaleDateString()}
+                        Applied {new Date(app.appliedAt).toLocaleDateString('en-US')}
                         {sr?.final_score !== undefined && (
                           <span className="ml-2 font-medium text-[#102C26]">
                             · Score: {sr.final_score.toFixed(1)}%
