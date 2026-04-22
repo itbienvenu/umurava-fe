@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUser, clearTokens } from "@/lib/auth";
+import { SignOut, UserCircle } from "@phosphor-icons/react";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -38,8 +39,9 @@ export default function AccountPage() {
 
       <button
         onClick={handleLogout}
-        className="w-full border-2 border-red-300 text-red-500 py-3 rounded-full font-medium hover:bg-red-50 transition-colors text-sm"
+        className="w-full border-2 border-red-300 text-red-500 py-3 rounded-full font-medium hover:bg-red-50 transition-all text-sm flex items-center justify-center gap-2 group shadow-sm hover:shadow-md"
       >
+        <SignOut size={18} className="group-hover:translate-x-1 transition-transform" />
         Logout
       </button>
     </div>

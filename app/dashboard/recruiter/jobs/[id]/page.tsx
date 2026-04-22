@@ -4,6 +4,21 @@ import { useState, useEffect, use } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { authFetch } from "@/lib/auth";
 import { ApiError } from "@/lib/apiError";
+import { 
+  CaretLeft, 
+  CircleNotch, 
+  CheckCircle, 
+  WarningCircle, 
+  Lock, 
+  Archive, 
+  RocketLaunch, 
+  ArrowCounterClockwise, 
+  ClipboardText, 
+  Star,
+  FloppyDisk,
+  Eye,
+  Info
+} from "@phosphor-icons/react";
 import SourcingTab from "./SourcingTab";
 
 interface Skill { name: string; category: string; required: boolean; level: string; weight: number }
@@ -172,8 +187,18 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
 
 
-  if (fetching) return <div className="flex items-center justify-center py-24 text-[#6b8f85]">Loading job...</div>;
-  if (fetchError) return <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">{fetchError}</div>;
+  if (fetching) return (
+    <div className="flex flex-col items-center justify-center py-24 text-[#6b8f85]">
+      <CircleNotch size={48} className="animate-spin mb-4" />
+      <p className="text-sm">Loading job details...</p>
+    </div>
+  );
+  if (fetchError) return (
+    <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg flex items-center gap-2">
+      <WarningCircle size={18} />
+      {fetchError}
+    </div>
+  );
   if (!job) return null;
 
   const status = (job.metadata?.status ?? "draft") as Status;
@@ -188,9 +213,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         <div>
           <button
             onClick={() => router.push("/dashboard/recruiter/jobs")}
-            className="text-xs text-[#6b8f85] hover:text-[#102C26] mb-2 flex items-center gap-1"
+            className="text-xs text-[#6b8f85] hover:text-[#102C26] mb-2 flex items-center gap-1 group transition-colors"
           >
-            ← Back to Jobs
+            <CaretLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+            Back to Jobs
           </button>
           <h1 className="text-2xl font-bold text-[#102C26]">{job.title}</h1>
           {job.company && (
@@ -224,31 +250,38 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
           {/* Global message */}
           {msg && (
-            <div className={`text-sm px-4 py-3 rounded-lg border ${
+            <div className={`text-sm px-4 py-3 rounded-lg border flex items-center gap-2 ${
               msgType === "success"
                 ? "bg-green-50 border-green-200 text-green-700"
                 : "bg-red-50 border-red-200 text-red-600"
-            }`}>{msg}</div>
+            }`}>
+              {msgType === "success" ? <CheckCircle size={18} /> : <WarningCircle size={18} />}
+              {msg}
+            </div>
           )}
 
           {/* Published lock banner */}
           {isPublished && (
             <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-lg flex items-center justify-between gap-4">
-              <span>🔒 This job is live. Unpublish it first to make edits.</span>
+              <div className="flex items-center gap-2">
+                <Lock size={18} weight="fill" className="text-amber-600" />
+                <span>This job is live. Unpublish it first to make edits.</span>
+              </div>
               <button
                 onClick={() => handleStatusChange("unpublish")}
                 disabled={actioning === "unpublish"}
-                className="shrink-0 text-xs bg-amber-700 text-white px-4 py-1.5 rounded-full hover:bg-amber-800 transition-colors disabled:opacity-60"
+                className="shrink-0 text-xs bg-amber-700 text-white px-4 py-1.5 rounded-full hover:bg-amber-800 transition-colors disabled:opacity-60 flex items-center gap-1.5"
               >
-                {actioning === "unpublish" ? "..." : "Unpublish"}
+                {actioning === "unpublish" ? <CircleNotch size={14} className="animate-spin" /> : "Unpublish"}
               </button>
             </div>
           )}
 
           {/* Archived banner */}
           {isArchived && (
-            <div className="bg-gray-50 border border-gray-200 text-gray-600 text-sm px-4 py-3 rounded-lg">
-              📦 This job is archived and not visible to applicants.
+            <div className="bg-gray-50 border border-gray-200 text-gray-600 text-sm px-4 py-3 rounded-lg flex items-center gap-2">
+              <Archive size={18} weight="fill" className="text-gray-400" />
+              <span>This job is archived and not visible to applicants.</span>
             </div>
           )}
 
@@ -348,7 +381,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             {/* Save — only when draft */}
             {canEdit && (
               <button onClick={handleSave} disabled={saving}
-                className="flex-1 bg-[#102C26] text-[#F7E7CE] py-3 rounded-full font-medium hover:bg-[#1a4a3a] transition-colors disabled:opacity-60 text-sm">
+                className="flex-1 bg-[#102C26] text-[#F7E7CE] py-3 rounded-full font-medium hover:bg-[#1a4a3a] transition-all disabled:opacity-60 text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md">
+                {saving ? <CircleNotch size={18} className="animate-spin" /> : <FloppyDisk size={18} />}
                 {saving ? "Saving..." : "Save Changes"}
               </button>
             )}
@@ -356,32 +390,36 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             {/* Publish — only when draft */}
             {canEdit && (
               <button onClick={() => handleStatusChange("publish")} disabled={actioning === "publish"}
-                className="flex-1 bg-green-600 text-white py-3 rounded-full font-medium hover:bg-green-700 transition-colors disabled:opacity-60 text-sm">
-                {actioning === "publish" ? "Publishing..." : "🚀 Publish Job"}
+                className="flex-1 bg-green-600 text-white py-3 rounded-full font-medium hover:bg-green-700 transition-all disabled:opacity-60 text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md">
+                {actioning === "publish" ? <CircleNotch size={18} className="animate-spin" /> : <RocketLaunch size={18} weight="fill" />}
+                {actioning === "publish" ? "Publishing..." : "Publish Job"}
               </button>
             )}
 
             {/* Unpublish — only when published */}
             {isPublished && (
               <button onClick={() => handleStatusChange("unpublish")} disabled={actioning === "unpublish"}
-                className="flex-1 border-2 border-amber-500 text-amber-600 py-3 rounded-full font-medium hover:bg-amber-50 transition-colors disabled:opacity-60 text-sm">
-                {actioning === "unpublish" ? "..." : "Unpublish"}
+                className="flex-1 border-2 border-amber-500 text-amber-600 py-3 rounded-full font-medium hover:bg-amber-50 transition-colors disabled:opacity-60 text-sm flex items-center justify-center gap-2">
+                {actioning === "unpublish" ? <CircleNotch size={18} className="animate-spin" /> : <Lock size={18} />}
+                {actioning === "unpublish" ? "Unpublishing..." : "Unpublish"}
               </button>
             )}
 
             {/* Archive — when draft or published (not already archived) */}
             {!isArchived && (
               <button onClick={() => handleStatusChange("archive")} disabled={actioning === "archive"}
-                className="px-6 py-3 border-2 border-gray-300 text-gray-500 rounded-full font-medium hover:bg-gray-50 transition-colors disabled:opacity-60 text-sm">
-                {actioning === "archive" ? "..." : "Archive"}
+                className="px-6 py-3 border-2 border-gray-300 text-gray-500 rounded-full font-medium hover:bg-gray-50 transition-colors disabled:opacity-60 text-sm flex items-center justify-center gap-2">
+                {actioning === "archive" ? <CircleNotch size={18} className="animate-spin" /> : <Archive size={18} />}
+                {actioning === "archive" ? "Archiving..." : "Archive"}
               </button>
             )}
 
             {/* Unarchive — only when archived */}
             {isArchived && (
               <button onClick={() => handleStatusChange("unarchive")} disabled={actioning === "unarchive"}
-                className="flex-1 border-2 border-[#102C26] text-[#102C26] py-3 rounded-full font-medium hover:bg-[#e8d0b0] transition-colors disabled:opacity-60 text-sm">
-                {actioning === "unarchive" ? "..." : "↩ Unarchive"}
+                className="flex-1 border-2 border-[#102C26] text-[#102C26] py-3 rounded-full font-medium hover:bg-[#e8d0b0] transition-colors disabled:opacity-60 text-sm flex items-center justify-center gap-2">
+                {actioning === "unarchive" ? <CircleNotch size={18} className="animate-spin" /> : <ArrowCounterClockwise size={18} weight="bold" />}
+                {actioning === "unarchive" ? "Restoring..." : "Unarchive"}
               </button>
             )}
           </div>
@@ -389,15 +427,15 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       )}
 
       {activeTab === "Applications" && (
-        <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 flex flex-col items-center justify-center py-16 text-[#6b8f85]">
-          <span className="text-4xl mb-3">📋</span>
+        <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 flex flex-col items-center justify-center py-16 text-[#6b8f85] text-center">
+          <ClipboardText size={48} weight="duotone" className="mb-4 opacity-30" />
           <p className="text-sm">No applications yet for this job.</p>
         </div>
       )}
 
       {activeTab === "Shortlist" && (
-        <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 flex flex-col items-center justify-center py-16 text-[#6b8f85]">
-          <span className="text-4xl mb-3">⭐</span>
+        <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 flex flex-col items-center justify-center py-16 text-[#6b8f85] text-center">
+          <Star size={48} weight="duotone" className="mb-4 opacity-30" />
           <p className="text-sm">Run screening first to see the shortlist.</p>
         </div>
       )}

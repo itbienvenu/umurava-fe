@@ -4,29 +4,40 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getUser, clearTokens, hasRole } from "@/lib/auth";
+import { 
+  SquaresFour, 
+  User, 
+  ClipboardText, 
+  Briefcase,
+  Buildings,
+  MagnifyingGlass,
+  SignOut,
+  List
+} from "@phosphor-icons/react";
 
 const NAV = [
   {
     label: "Dashboard",
     href: "/dashboard/applicant",
-    icon: "▦",
+    icon: <SquaresFour size={20} weight="duotone" />,
   },
   {
     label: "My Profile",
     href: "/dashboard/applicant/profile",
-    icon: "👤",
+    icon: <User size={20} weight="duotone" />,
   },
   {
     label: "My Applications",
     href: "/dashboard/applicant/applications",
-    icon: "📋",
+    icon: <ClipboardText size={20} weight="duotone" />,
   },
   {
     label: "Available Jobs",
     href: "/dashboard/applicant/jobs",
-    icon: "💼",
+    icon: <Briefcase size={20} weight="duotone" />,
   },
 ];
+
 
 export default function ApplicantLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -106,8 +117,9 @@ export default function ApplicantLayout({ children }: { children: React.ReactNod
           </div>
           <button
             onClick={handleLogout}
-            className="w-full text-sm border border-[#F7E7CE]/30 py-1.5 rounded-full hover:bg-[#F7E7CE]/10 transition-colors"
+            className="w-full text-sm border border-[#F7E7CE]/30 py-2 rounded-full hover:bg-[#F7E7CE]/10 transition-colors flex items-center justify-center gap-2"
           >
+            <SignOut size={16} />
             Logout
           </button>
         </div>
@@ -117,7 +129,9 @@ export default function ApplicantLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Top bar (mobile) */}
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-[#102C26] text-[#F7E7CE] shrink-0">
-          <button onClick={() => setSidebarOpen(true)} className="text-xl">☰</button>
+          <button onClick={() => setSidebarOpen(true)} className="text-xl">
+            <List size={28} />
+          </button>
           <span className="font-bold">🍎 AppleOfEve</span>
           <div className="w-6" />
         </header>

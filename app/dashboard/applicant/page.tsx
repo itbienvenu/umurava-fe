@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { getUser } from "@/lib/auth";
+import { HandWaving, ClipboardText, ArrowRight } from "@phosphor-icons/react";
+import Link from "next/link";
 
 export default function ApplicantDashboard() {
   const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
@@ -17,8 +19,8 @@ export default function ApplicantDashboard() {
     <div>
       {/* Welcome banner */}
       <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 mb-8">
-        <h1 className="text-2xl font-bold text-[#102C26] mb-1">
-          Welcome back, {user.name} 👋
+        <h1 className="text-2xl font-bold text-[#102C26] mb-1 flex items-center gap-2">
+          Welcome back, {user.name} <HandWaving size={28} weight="duotone" className="text-amber-500" />
         </h1>
         <p className="text-[#6b8f85] text-sm">
           Here&apos;s what&apos;s happening with your job search today.
@@ -46,11 +48,12 @@ export default function ApplicantDashboard() {
       <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8">
         <h2 className="text-lg font-semibold text-[#102C26] mb-4">Recent Applications</h2>
         <div className="flex flex-col items-center justify-center py-12 text-[#6b8f85]">
-          <span className="text-4xl mb-3">📋</span>
+          <ClipboardText size={48} weight="duotone" className="mb-3 opacity-50" />
           <p className="text-sm">No applications yet. Start exploring jobs!</p>
-          <button className="mt-4 bg-[#102C26] text-[#F7E7CE] px-6 py-2 rounded-full text-sm font-medium hover:bg-[#1a4a3a] transition-colors">
+          <Link href="/dashboard/applicant/jobs" className="mt-4 bg-[#102C26] text-[#F7E7CE] px-6 py-2 rounded-full text-sm font-medium hover:bg-[#1a4a3a] transition-colors flex items-center gap-2">
             Browse Jobs
-          </button>
+            <ArrowRight size={16} />
+          </Link>
         </div>
       </div>
     </div>

@@ -26,3 +26,24 @@ export async function getApplicationById(id: string): Promise<ApplicationRespons
   const res = await authFetch(`${BASE}/api/v1/applications/${id}`);
   return await ApiError.handle(res) as ApplicationResponse;
 }
+
+export interface CoverLetterGenerationResponse {
+  success: boolean;
+  message: string;
+  data: {
+    subject: string;
+    content: string;
+    highlights: string[];
+    tips: string;
+  };
+}
+
+export async function generateCoverLetter(jobId: string, instructions?: string): Promise<CoverLetterGenerationResponse> {
+  const res = await authFetch(`${BASE}/api/v1/applicants/generate-cover-letter/${jobId}`, {
+    method: "POST",
+    body: JSON.stringify({ instructions }),
+  });
+
+  return await ApiError.handle(res) as CoverLetterGenerationResponse;
+}
+

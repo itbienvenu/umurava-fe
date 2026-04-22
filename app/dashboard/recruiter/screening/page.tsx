@@ -3,6 +3,20 @@
 import { useState, useEffect } from "react";
 import { authFetch } from "@/lib/auth";
 import { ApiError } from "@/lib/apiError";
+import { 
+  MagnifyingGlass, 
+  CircleNotch, 
+  CheckCircle, 
+  WarningCircle, 
+  Lightbulb, 
+  CaretDown, 
+  CaretUp,
+  Trophy,
+  User,
+  ChartBar,
+  Sparkle,
+  TrendUp
+} from "@phosphor-icons/react";
 
 interface Job {
   _id: string;
@@ -103,7 +117,8 @@ export default function ScreeningPage() {
       </p>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
+          <WarningCircle size={18} />
           {error}
         </div>
       )}
@@ -113,7 +128,10 @@ export default function ScreeningPage() {
         <label className="text-sm font-medium text-[#102C26] mb-2 block">Select Job to Screen</label>
 
         {loadingJobs ? (
-          <p className="text-sm text-[#6b8f85]">Loading jobs...</p>
+          <div className="flex items-center gap-2 text-sm text-[#6b8f85]">
+            <CircleNotch size={16} className="animate-spin" />
+            Loading jobs...
+          </div>
         ) : jobs.length === 0 ? (
           <p className="text-sm text-[#6b8f85]">No jobs found. Create and publish a job first.</p>
         ) : (
@@ -137,11 +155,14 @@ export default function ScreeningPage() {
             >
               {screening ? (
                 <>
-                  <span className="animate-spin inline-block">⟳</span>
+                  <CircleNotch size={18} className="animate-spin" />
                   AI Screening...
                 </>
               ) : (
-                <>🔍 Run Screening</>
+                <>
+                  <MagnifyingGlass size={18} weight="bold" />
+                  Run Screening
+                </>
               )}
             </button>
           </div>
@@ -168,8 +189,8 @@ export default function ScreeningPage() {
           </div>
 
           {results.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 flex flex-col items-center justify-center py-16 text-[#6b8f85]">
-              <span className="text-4xl mb-3">🔍</span>
+            <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 flex flex-col items-center justify-center py-16 text-[#6b8f85] text-center">
+              <MagnifyingGlass size={48} weight="duotone" className="mb-4 opacity-30" />
               <p className="text-sm">No eligible applications found for this job.</p>
               <p className="text-xs mt-1">Applications must be in pending or reviewed status.</p>
             </div>
@@ -188,13 +209,13 @@ export default function ScreeningPage() {
                     {/* Candidate row */}
                     <div className="flex items-center gap-4 p-5">
                       {/* Rank badge */}
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
-                        sr.rank === 1 ? "bg-yellow-100 text-yellow-700" :
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-sm ${
+                        sr.rank === 1 ? "bg-yellow-100 text-yellow-700 ring-2 ring-yellow-400/20" :
                         sr.rank === 2 ? "bg-gray-100 text-gray-600" :
                         sr.rank === 3 ? "bg-orange-100 text-orange-600" :
                         "bg-[#F7E7CE] text-[#102C26]"
                       }`}>
-                        #{sr.rank}
+                        {sr.rank === 1 ? <Trophy size={18} weight="fill" /> : `#${sr.rank}`}
                       </div>
 
                       {/* Info */}
@@ -224,9 +245,9 @@ export default function ScreeningPage() {
 
                       <button
                         onClick={() => setExpandedId(isExpanded ? null : candidate.application_id)}
-                        className="text-xs text-[#6b8f85] hover:text-[#102C26] px-2 py-1 rounded-lg hover:bg-[#F7E7CE] transition-colors shrink-0"
+                        className="text-xs text-[#6b8f85] hover:text-[#102C26] px-3 py-1.5 rounded-lg hover:bg-[#F7E7CE] transition-colors shrink-0 flex items-center gap-1"
                       >
-                        {isExpanded ? "▲" : "▼"}
+                        {isExpanded ? <CaretUp size={14} weight="bold" /> : <CaretDown size={14} weight="bold" />}
                       </button>
                     </div>
 
@@ -237,7 +258,10 @@ export default function ScreeningPage() {
                         {/* Dimension breakdown */}
                         {sr.dimension_breakdown && (
                           <div>
-                            <p className="text-xs font-semibold text-[#102C26] mb-2">Score Breakdown</p>
+                            <div className="flex items-center gap-2 mb-3">
+                              <ChartBar size={16} weight="duotone" className="text-[#102C26]" />
+                              <p className="text-xs font-semibold text-[#102C26]">Score Breakdown</p>
+                            </div>
                             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                               {Object.entries(sr.dimension_breakdown).map(([key, val]) => (
                                 <div key={key} className="flex flex-col items-center bg-white rounded-xl border border-[#e8d0b0] p-2.5">
@@ -256,18 +280,34 @@ export default function ScreeningPage() {
                         {/* Strengths & gaps */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {sr.strengths && sr.strengths.length > 0 && (
-                            <div className="bg-green-50 rounded-xl p-3">
-                              <p className="text-xs font-semibold text-green-700 mb-1">✅ Strengths</p>
-                              <ul className="text-xs text-green-700 list-disc list-inside space-y-0.5">
-                                {sr.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                            <div className="bg-green-50 rounded-xl p-3 border border-green-100">
+                              <p className="text-xs font-bold text-green-700 mb-2 flex items-center gap-1.5">
+                                <Sparkle size={14} weight="fill" />
+                                Key Strengths
+                              </p>
+                              <ul className="text-xs text-green-700 space-y-1.5 list-none">
+                                {sr.strengths.map((s, i) => (
+                                  <li key={i} className="flex items-start gap-1.5">
+                                    <CheckCircle size={14} weight="bold" className="mt-0.5 shrink-0" />
+                                    {s}
+                                  </li>
+                                ))}
                               </ul>
                             </div>
                           )}
                           {sr.gaps && sr.gaps.length > 0 && (
-                            <div className="bg-red-50 rounded-xl p-3">
-                              <p className="text-xs font-semibold text-red-600 mb-1">⚠️ Gaps</p>
-                              <ul className="text-xs text-red-600 list-disc list-inside space-y-0.5">
-                                {sr.gaps.map((g, i) => <li key={i}>{g}</li>)}
+                            <div className="bg-red-50 rounded-xl p-3 border border-red-100">
+                              <p className="text-xs font-bold text-red-600 mb-2 flex items-center gap-1.5">
+                                <MagnifyingGlass size={14} weight="fill" />
+                                Identified Gaps
+                              </p>
+                              <ul className="text-xs text-red-600 space-y-1.5 list-none">
+                                {sr.gaps.map((g, i) => (
+                                  <li key={i} className="flex items-start gap-1.5">
+                                    <WarningCircle size={14} weight="bold" className="mt-0.5 shrink-0" />
+                                    {g}
+                                  </li>
+                                ))}
                               </ul>
                             </div>
                           )}
@@ -275,9 +315,12 @@ export default function ScreeningPage() {
 
                         {/* Recommendation */}
                         {sr.recommendation && (
-                          <div className="bg-white border border-[#e8d0b0] rounded-xl px-4 py-3">
-                            <p className="text-xs font-semibold text-[#102C26] mb-1">💡 AI Recommendation</p>
-                            <p className="text-xs text-[#6b8f85] leading-relaxed">{sr.recommendation}</p>
+                          <div className="bg-white border border-[#e8d0b0]/50 rounded-xl px-4 py-3 flex items-start gap-3">
+                            <Lightbulb size={18} weight="fill" className="text-amber-500 mt-0.5" />
+                            <div>
+                              <p className="text-xs font-bold text-[#102C26] mb-0.5">AI Recommendation</p>
+                              <p className="text-xs text-[#6b8f85] leading-relaxed">{sr.recommendation}</p>
+                            </div>
                           </div>
                         )}
 

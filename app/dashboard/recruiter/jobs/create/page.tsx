@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { authFetch } from "@/lib/auth";
 import { ApiError } from "@/lib/apiError";
 import ManualJobForm from "./ManualJobForm";
+import { Sparkle, NotePencil, CircleNotch, WarningCircle } from "@phosphor-icons/react";
 
 type Mode = "ai" | "manual";
 
@@ -13,7 +14,35 @@ export default function CreateJobPage() {
   const [mode, setMode] = useState<Mode>("ai");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+  const [ideating, setIdeating] = useState(false);
   const [error, setError] = useState("");
+
+  async function handleIdeate() {
+    if (!description.trim()) {
+      setError("Please enter some rough notes first to ideate with AI.");
+      return;
+    }
+
+    setError("");
+    setIdeating(true);
+
+    try {
+      const res = await authFetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/jobs/generate-description`,
+        {
+          method: "POST",
+          body: JSON.stringify({ description }),
+        }
+      );
+      const data = await ApiError.handle(res) as { data: { full_description: string } };
+      setDescription(data.data.full_description);
+    } catch (err) {
+      if (err instanceof ApiError) setError(err.message);
+      else setError("Failed to generate description. Please try again.");
+    } finally {
+      setIdeating(false);
+    }
+  }
 
   async function handleAiSubmit(e: FormEvent) {
     e.preventDefault();
@@ -58,24 +87,26 @@ export default function CreateJobPage() {
         <button
           type="button"
           onClick={() => setMode("ai")}
-          className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all ${
+          className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
             mode === "ai"
               ? "bg-[#102C26] text-[#F7E7CE] shadow-sm"
               : "text-[#102C26] hover:bg-[#102C26]/5"
           }`}
         >
-          ✨ AI Parsing
+          <Sparkle size={18} weight={mode === "ai" ? "fill" : "regular"} />
+          AI Parsing
         </button>
         <button
           type="button"
           onClick={() => setMode("manual")}
-          className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all ${
+          className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
             mode === "manual"
               ? "bg-[#102C26] text-[#F7E7CE] shadow-sm"
               : "text-[#102C26] hover:bg-[#102C26]/5"
           }`}
         >
-          📝 Manual Entry
+          <NotePencil size={18} weight={mode === "manual" ? "fill" : "regular"} />
+          Manual Entry
         </button>
       </div>
 
@@ -83,13 +114,29 @@ export default function CreateJobPage() {
         <div className="max-w-3xl">
           <form onSubmit={handleAiSubmit} className="flex flex-col gap-4">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
+                <WarningCircle size={18} />
                 {error}
               </div>
             )}
 
-            <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6 flex flex-col gap-3 shadow-sm">
-              <label className="text-xs font-semibold text-[#102C26] uppercase tracking-wider">Job Description</label>
+            <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6 flex flex-col gap-3 shadow-sm relative">
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs font-semibold text-[#102C26] uppercase tracking-wider">Job Description</label>
+                <button
+                  type="button"
+                  onClick={handleIdeate}
+                  disabled={ideating || !description.trim()}
+                  className="flex items-center gap-2 text-xs font-bold text-[#102C26] bg-[#F7E7CE] px-3 py-1.5 rounded-lg hover:bg-[#e8d0b0] transition-colors disabled:opacity-50"
+                >
+                  {ideating ? (
+                    <CircleNotch size={14} className="animate-spin" />
+                  ) : (
+                    <Sparkle size={14} weight="fill" />
+                  )}
+                  Ideate with AI
+                </button>
+              </div>
               <textarea
                 required
                 rows={10}
@@ -110,11 +157,14 @@ export default function CreateJobPage() {
             >
               {loading ? (
                 <>
-                  <span className="animate-spin inline-block">⟳</span>
+                  <CircleNotch size={24} className="animate-spin" />
                   Scanning Description...
                 </>
               ) : (
-                "✨ Parse & Create Job"
+                <>
+                  <Sparkle size={24} weight="fill" />
+                  Parse & Create Job
+                </>
               )}
             </button>
           </form>
