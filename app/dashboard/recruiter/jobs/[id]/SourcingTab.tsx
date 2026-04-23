@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from "react";
-import { authFetch } from "@/lib/auth";
+import { authFetch, getTokens } from "@/lib/auth";
 import { ApiError } from "@/lib/apiError";
 import { 
   CheckCircle, 
@@ -181,6 +181,9 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
     setCvFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadPhase, setUploadPhase] = useState<"uploading" | "processing" | "finalizing" | null>(null);
+
   const handleImport = async () => {
     if (mode === "csv") {
       await handleCsvImport();
@@ -200,6 +203,8 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
 
     setIsUploading(true);
     setError("");
+    setUploadPhase("uploading");
+    setUploadProgress(0);
 
     try {
       const formData = new FormData();
@@ -208,17 +213,37 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
       formData.append("skipInvalidRows", String(skipInvalid));
       formData.append("file", file);
 
-      const res = await authFetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/sourcing/bulk-import`, {
-        method: "POST",
-        body: formData,
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            setUploadProgress(percent);
+            if (percent === 100) setUploadPhase("processing");
+          }
+        });
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              const data = JSON.parse(xhr.responseText);
+              setResult({ type: 'csv', ...data.data });
+              resolve(data);
+            } else {
+              reject(new Error(JSON.parse(xhr.responseText).message || "Import failed"));
+            }
+          }
+        };
+        xhr.open("POST", `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/sourcing/bulk-import`);
+        const { accessToken } = getTokens();
+        if (accessToken) xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
+        xhr.send(formData);
       });
-
-      const data = await ApiError.handle(res) as { success: boolean, data: Omit<CsvSourcingResult, 'type'> };
-      setResult({ type: 'csv', ...data.data });
     } catch (err: any) {
       setError(err.message || "Failed to import candidates");
+      setUploadPhase(null);
     } finally {
       setIsUploading(false);
+      setUploadPhase(null);
     }
   };
 
@@ -230,6 +255,8 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
 
     setIsUploading(true);
     setError("");
+    setUploadPhase("uploading");
+    setUploadProgress(0);
 
     try {
       const formData = new FormData();
@@ -238,22 +265,41 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
         formData.append("cvs", f);
       });
 
-      const res = await authFetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/sourcing/batch-upload-cvs`, {
-        method: "POST",
-        body: formData,
-      });
-
-      // Backend returns 202 Accepted immediately
-      const data = await ApiError.handle(res) as { success: boolean, message?: string };
-      setResult({ 
-        type: 'cv', 
-        message: data.message || "Batch upload started successfully!",
-        count: cvFiles.length 
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            setUploadProgress(percent);
+            if (percent === 100) setUploadPhase("processing");
+          }
+        });
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              const data = JSON.parse(xhr.responseText);
+              setResult({ 
+                type: 'cv', 
+                message: data.message || "Batch upload started successfully!",
+                count: cvFiles.length 
+              });
+              resolve(data);
+            } else {
+              reject(new Error(JSON.parse(xhr.responseText).message || "Upload failed"));
+            }
+          }
+        };
+        xhr.open("POST", `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/sourcing/batch-upload-cvs`);
+        const { accessToken } = getTokens();
+        if (accessToken) xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
+        xhr.send(formData);
       });
     } catch (err: any) {
       setError(err.message || "Failed to upload CVs");
+      setUploadPhase(null);
     } finally {
       setIsUploading(false);
+      setUploadPhase(null);
     }
   };
 
@@ -450,18 +496,29 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                 <button
                   onClick={handleImport}
                   disabled={isUploading}
-                  className="w-full bg-[#102C26] text-[#F7E7CE] py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                  className="w-full bg-[#102C26] text-[#F7E7CE] py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-100 flex flex-col items-center justify-center gap-2 overflow-hidden relative"
                 >
                   {isUploading ? (
-                    <>
-                      <CircleNotch size={24} className="animate-spin" />
-                      <span>Uploading & Processing...</span>
-                    </>
+                    <div className="w-full px-8 py-1 space-y-2 animate-in fade-in duration-300">
+                      <div className="flex justify-between items-center text-[10px] uppercase tracking-widest font-black">
+                        <span className="flex items-center gap-2">
+                          <CircleNotch size={14} className="animate-spin" />
+                          {uploadPhase === 'uploading' ? `Uploading ${cvFiles.length} CVs...` : 'AI is processing batch...'}
+                        </span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-[#F7E7CE]/20 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-[#F7E7CE] rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(247,231,206,0.6)]"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   ) : (
-                    <>
+                    <div className="flex items-center gap-3">
                       <span>Start AI Sourcing</span>
                       <ArrowRight size={24} weight="bold" />
-                    </>
+                    </div>
                   )}
                 </button>
                 <p className="text-[10px] text-center text-[#6b8f85] mt-4 uppercase tracking-widest font-bold flex items-center justify-center gap-2">
@@ -550,13 +607,24 @@ export default function SourcingTab({ jobId }: SourcingTabProps) {
                 <button
                   onClick={handleImport}
                   disabled={isUploading}
-                  className="bg-[#102C26] text-[#F7E7CE] px-10 py-3.5 rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 flex items-center gap-2 min-w-[180px] justify-center"
+                  className="bg-[#102C26] text-[#F7E7CE] px-10 py-3.5 rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-100 flex flex-col items-center justify-center gap-2 min-w-[220px] overflow-hidden"
                 >
                   {isUploading ? (
-                    <>
-                      <CircleNotch size={18} className="animate-spin" />
-                      <span>Processing...</span>
-                    </>
+                    <div className="w-full space-y-1.5 animate-in fade-in duration-300">
+                      <div className="flex justify-between items-center text-[9px] uppercase tracking-widest font-black">
+                        <span className="flex items-center gap-1.5">
+                          <CircleNotch size={12} className="animate-spin" />
+                          {uploadPhase === 'uploading' ? 'Uploading...' : 'Processing...'}
+                        </span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full h-1 bg-[#F7E7CE]/20 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-[#F7E7CE] rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(247,231,206,0.6)]"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   ) : "Start Import"}
                 </button>
               </div>

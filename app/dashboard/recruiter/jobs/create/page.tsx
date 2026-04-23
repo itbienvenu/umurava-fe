@@ -15,16 +15,29 @@ export default function CreateJobPage() {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [ideating, setIdeating] = useState(false);
+  const [ideatingProgress, setIdeatingProgress] = useState(0);
   const [error, setError] = useState("");
 
-  async function handleIdeate() {
+  const handleIdeate = async () => {
     if (!description.trim()) {
       setError("Please enter some rough notes first to ideate with AI.");
       return;
     }
 
-    setError("");
     setIdeating(true);
+    setIdeatingProgress(0);
+    setError("");
+
+    // Simulate progress
+    const interval = setInterval(() => {
+      setIdeatingProgress(prev => {
+        if (prev >= 95) {
+          clearInterval(interval);
+          return 95;
+        }
+        return prev + 5;
+      });
+    }, 200);
 
     try {
       const res = await authFetch(
@@ -35,14 +48,17 @@ export default function CreateJobPage() {
         }
       );
       const data = await ApiError.handle(res) as { data: { full_description: string } };
+      setIdeatingProgress(100);
+      clearInterval(interval);
       setDescription(data.data.full_description);
     } catch (err) {
       if (err instanceof ApiError) setError(err.message);
       else setError("Failed to generate description. Please try again.");
+      clearInterval(interval);
     } finally {
       setIdeating(false);
     }
-  }
+  };
 
   async function handleAiSubmit(e: FormEvent) {
     e.preventDefault();
@@ -59,7 +75,7 @@ export default function CreateJobPage() {
       );
       const data = await ApiError.handle(res) as { data: { insertedId?: string; _id?: string } };
       const jobId = data.data.insertedId || data.data._id;
-      
+
       if (jobId) {
         router.push(`/dashboard/recruiter/jobs/${jobId}`);
       } else {
@@ -87,11 +103,10 @@ export default function CreateJobPage() {
         <button
           type="button"
           onClick={() => setMode("ai")}
-          className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
-            mode === "ai"
-              ? "bg-[#102C26] text-[#F7E7CE] shadow-sm"
-              : "text-[#102C26] hover:bg-[#102C26]/5"
-          }`}
+          className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${mode === "ai"
+            ? "bg-[#102C26] text-[#F7E7CE] shadow-sm"
+            : "text-[#102C26] hover:bg-[#102C26]/5"
+            }`}
         >
           <Sparkle size={18} weight={mode === "ai" ? "fill" : "regular"} />
           AI Parsing
@@ -99,11 +114,10 @@ export default function CreateJobPage() {
         <button
           type="button"
           onClick={() => setMode("manual")}
-          className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
-            mode === "manual"
-              ? "bg-[#102C26] text-[#F7E7CE] shadow-sm"
-              : "text-[#102C26] hover:bg-[#102C26]/5"
-          }`}
+          className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${mode === "manual"
+            ? "bg-[#102C26] text-[#F7E7CE] shadow-sm"
+            : "text-[#102C26] hover:bg-[#102C26]/5"
+            }`}
         >
           <NotePencil size={18} weight={mode === "manual" ? "fill" : "regular"} />
           Manual Entry
@@ -127,14 +141,30 @@ export default function CreateJobPage() {
                   type="button"
                   onClick={handleIdeate}
                   disabled={ideating || !description.trim()}
-                  className="flex items-center gap-2 text-xs font-bold text-[#102C26] bg-[#F7E7CE] px-3 py-1.5 rounded-lg hover:bg-[#e8d0b0] transition-colors disabled:opacity-50"
+                  className="flex flex-col items-center gap-1.5 text-xs font-bold text-[#102C26] bg-[#F7E7CE] px-4 py-2 rounded-xl hover:bg-[#e8d0b0] transition-all disabled:opacity-100 min-w-[140px] relative overflow-hidden"
                 >
                   {ideating ? (
-                    <CircleNotch size={14} className="animate-spin" />
+                    <div className="w-full space-y-1 animate-in fade-in">
+                      <div className="flex justify-between items-center text-[8px] uppercase tracking-tighter">
+                        <span className="flex items-center gap-1">
+                          <CircleNotch size={10} className="animate-spin" />
+                          Thinking...
+                        </span>
+                        <span>{ideatingProgress}%</span>
+                      </div>
+                      <div className="w-full h-1 bg-[#102C26]/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[#102C26] rounded-full transition-all duration-300"
+                          style={{ width: `${ideatingProgress}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   ) : (
-                    <Sparkle size={14} weight="fill" />
+                    <div className="flex items-center gap-2">
+                      <Sparkle size={14} weight="fill" className="text-amber-600" />
+                      Ideate with AI
+                    </div>
                   )}
-                  Ideate with AI
                 </button>
               </div>
               <textarea

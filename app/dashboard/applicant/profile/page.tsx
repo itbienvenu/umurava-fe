@@ -15,7 +15,8 @@ import {
   X,
   Plus,
   Trash,
-  CircleNotch
+  CircleNotch,
+  Sparkle
 } from "@phosphor-icons/react";
 
 export default function ProfilePage() {
@@ -108,6 +109,9 @@ export default function ProfilePage() {
     fetchProfile();
   }, []);
 
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadPhase, setUploadPhase] = useState<"uploading" | "processing" | "finalizing" | null>(null);
+
   const processFile = async (file: File) => {
     if (file.type !== "application/pdf") {
       setError("Please upload a PDF file.");
@@ -123,8 +127,28 @@ export default function ProfilePage() {
     try {
       setUploading(true);
       setError(null);
-      const res = await uploadCV(file);
+      setUploadPhase("uploading");
+      setUploadProgress(0);
+
+      const res = await uploadCV(file, (percent) => {
+        setUploadProgress(percent);
+        if (percent === 100) {
+          setUploadPhase("processing");
+          // Fake progress for processing as backend doesn't provide it yet
+          let p = 0;
+          const interval = setInterval(() => {
+            p += 5;
+            if (p >= 90) {
+              clearInterval(interval);
+              setUploadPhase("finalizing");
+            }
+          }, 500);
+        }
+      });
+
       if (res.success) {
+        setUploadProgress(100);
+        setUploadPhase(null);
         const profileData = res.data.profile;
         setProfile(prev => ({ 
           ...prev, 
@@ -147,6 +171,7 @@ export default function ProfilePage() {
       }
     } catch (err: any) {
       setError(err.message || "Failed to upload CV.");
+      setUploadPhase(null);
     } finally {
       setUploading(false);
     }
@@ -644,24 +669,66 @@ export default function ProfilePage() {
           <div className="space-y-6">
             <h3 className="font-semibold text-[#102C26]">Resume / CV</h3>
             <div 
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => !uploading && fileInputRef.current?.click()}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center gap-4 hover:bg-[#fcf8f2] transition-all cursor-pointer group
-                ${uploading ? "opacity-50 cursor-not-allowed" : ""}
-                ${isDragging ? "border-[#102C26] bg-[#fcf8f2] scale-[1.02]" : "border-[#e8d0b0]"}`}
+              className={`border-2 border-dashed rounded-3xl p-12 flex flex-col items-center justify-center gap-6 hover:bg-[#F7E7CE]/10 transition-all cursor-pointer relative group overflow-hidden
+                ${uploading ? "border-[#102C26] bg-[#F7E7CE]/5 cursor-default" : "border-[#e8d0b0] hover:border-[#102C26]"}
+                ${isDragging ? "border-[#102C26] bg-[#F7E7CE]/20 scale-[1.01]" : ""}`}
             >
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all
-                ${isDragging ? "bg-[#102C26] text-white" : "bg-[#F7E7CE] group-hover:scale-110"}`}>
-                {uploading ? <CircleNotch size={32} className="animate-spin" /> : isDragging ? <CloudArrowUp size={32} /> : <FileText size={32} />}
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-medium text-[#102C26]">
-                  {uploading ? "Parsing your CV with AI..." : isDragging ? "Drop your PDF here" : "Click to upload or drag and drop"}
-                </p>
-                <p className="text-xs text-[#6b8f85] mt-1">PDF Only (Max 10MB)</p>
-              </div>
+              {uploading ? (
+                <div className="w-full max-w-sm flex flex-col items-center gap-6 animate-in fade-in duration-500">
+                  <div className="relative">
+                    <CircleNotch size={80} className="animate-spin text-[#102C26] opacity-10" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xl font-black text-[#102C26]">{uploadPhase === 'uploading' ? uploadProgress : '90'}%</span>
+                    </div>
+                  </div>
+                  
+                  <div className="w-full space-y-3">
+                    <div className="flex justify-between items-end">
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold text-[#102C26] capitalize">
+                          {uploadPhase === 'uploading' ? 'Transferring File...' : uploadPhase === 'processing' ? 'AI is analyzing CV...' : 'Wrapping up...'}
+                        </p>
+                        <p className="text-[10px] text-[#6b8f85] font-medium uppercase tracking-widest italic">
+                          {uploadPhase === 'uploading' ? 'Securely sending to our servers' : 'Extracting skills & experience'}
+                        </p>
+                      </div>
+                      <Sparkle size={20} weight="fill" className="text-amber-500 animate-pulse" />
+                    </div>
+                    
+                    <div className="w-full h-3 bg-[#102C26]/5 rounded-full overflow-hidden border border-[#102C26]/10 p-0.5">
+                      <div 
+                        className="h-full bg-[#102C26] rounded-full transition-all duration-500 relative"
+                        style={{ width: `${uploadPhase === 'uploading' ? uploadProgress : 90}%` }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className={`w-20 h-20 rounded-3xl flex items-center justify-center text-3xl shadow-sm transition-all duration-300
+                    ${isDragging ? "bg-[#102C26] text-[#F7E7CE] rotate-12 scale-110" : "bg-[#F7E7CE] text-[#102C26] group-hover:scale-110"}`}>
+                    <FileText size={40} weight="duotone" />
+                  </div>
+                  <div className="text-center space-y-2">
+                    <p className="text-lg font-bold text-[#102C26]">
+                      {isDragging ? "Release to drop CV" : "Upload your Resume"}
+                    </p>
+                    <p className="text-sm text-[#6b8f85] max-w-[240px] mx-auto">
+                      Drag and drop your PDF here or click to browse files
+                    </p>
+                    <div className="pt-2">
+                      <span className="text-[10px] bg-[#102C26] text-[#F7E7CE] px-3 py-1 rounded-full font-bold uppercase tracking-widest">PDF Max 10MB</span>
+                    </div>
+                  </div>
+                </>
+              )}
+              
               <input 
                 type="file" 
                 ref={fileInputRef}
