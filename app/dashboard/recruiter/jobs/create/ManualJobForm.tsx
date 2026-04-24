@@ -4,7 +4,6 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { authFetch } from "@/lib/auth";
 import { ApiError } from "@/lib/apiError";
-import { API_BASE_URL } from "@/lib/api-config";
 import { 
   ClipboardText, 
   Airplane, 
@@ -172,7 +171,7 @@ export default function ManualJobForm() {
 
     try {
       const res = await authFetch(
-        `${API_BASE_URL}/api/v1/jobs/manual-entry`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/jobs/manual-entry`,
         {
           method: "POST",
           body: JSON.stringify(formData),

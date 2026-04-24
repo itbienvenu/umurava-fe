@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveTokens, saveUser } from "@/lib/auth";
 import { useAuthRedirect } from "@/lib/useAuthRedirect";
-import { API_BASE_URL } from "@/lib/api-config";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,7 +21,7 @@ export default function LoginPage() {
 
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/v1/auth/login`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

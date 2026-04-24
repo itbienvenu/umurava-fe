@@ -2,9 +2,7 @@ import { authFetch } from "./auth";
 import { JobsResponse, SingleJobResponse } from "../types/job";
 import { ApiError } from "./apiError";
 
-import { API_BASE_URL } from "./api-config";
-
-const BASE = API_BASE_URL;
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export async function getPublishedJobs(): Promise<JobsResponse> {
   const res = await authFetch(`${BASE}/api/v1/jobs`);
