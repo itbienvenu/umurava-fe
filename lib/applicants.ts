@@ -2,7 +2,9 @@ import { authFetch, getTokens } from "./auth";
 import { CVUploadResponse, SavedApplicantProfile, ApplicantProfile } from "../types/applicant";
 import { ApiError } from "./apiError";
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { API_BASE_URL } from "./api-config";
+
+const BASE = API_BASE_URL;
 
 export interface ProfileResponse {
   success: boolean;

@@ -1,4 +1,6 @@
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { API_BASE_URL } from "./api-config";
+
+const BASE = API_BASE_URL;
 
 export function getTokens() {
   if (typeof window === "undefined") return { accessToken: null, refreshToken: null };

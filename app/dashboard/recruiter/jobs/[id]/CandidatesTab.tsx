@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { authFetch } from "@/lib/auth";
 import { ApiError } from "@/lib/apiError";
+import { API_BASE_URL } from "@/lib/api-config";
 import {
   ClipboardText,
   CheckCircle,
@@ -83,7 +84,7 @@ export default function CandidatesTab({ jobId, filterStatus = "all" }: Candidate
 
   useEffect(() => {
     setLoading(true);
-    authFetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/applications/job/${jobId}`)
+    authFetch(`${API_BASE_URL}/api/v1/applications/job/${jobId}`)
       .then((r) => ApiError.handle(r))
       .then((data) => setApplications((data as { data: Application[] }).data ?? []))
       .catch((err: ApiError) => setError(err.message))
@@ -94,7 +95,7 @@ export default function CandidatesTab({ jobId, filterStatus = "all" }: Candidate
     setUpdatingId(appId);
     try {
       const res = await authFetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/applications/${appId}/status`,
+        `${API_BASE_URL}/api/v1/applications/${appId}/status`,
         { method: "PATCH", body: JSON.stringify({ status: newStatus }) }
       );
       await ApiError.handle(res);
@@ -299,8 +300,8 @@ export default function CandidatesTab({ jobId, filterStatus = "all" }: Candidate
                         disabled={app.status === s || updatingId === app._id}
                         onClick={() => handleStatusUpdate(app._id, s)}
                         className={`text-[10px] px-4 py-2 rounded-xl font-bold border transition-all uppercase tracking-wider disabled:cursor-not-allowed ${app.status === s
-                            ? `${STATUS_STYLES[s]} border-transparent shadow-md scale-105`
-                            : "bg-white border-[#e8d0b0] text-[#6b8f85] hover:border-[#102C26] hover:text-[#102C26] hover:shadow-sm"
+                          ? `${STATUS_STYLES[s]} border-transparent shadow-md scale-105`
+                          : "bg-white border-[#e8d0b0] text-[#6b8f85] hover:border-[#102C26] hover:text-[#102C26] hover:shadow-sm"
                           } disabled:opacity-40`}
                       >
                         {updatingId === app._id && app.status !== s ? (
