@@ -17,5 +17,8 @@ export const API_ENDPOINTS = {
   },
   jobs: {
     base: `${API_BASE_URL}/api/v1/jobs`,
-  }
+  },
+  applications: {
+    base: `${API_BASE_URL}/api/v1/applications`,
+  },
 };
