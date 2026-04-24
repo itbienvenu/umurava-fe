@@ -4,7 +4,6 @@ import { useState, FormEvent, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthRedirect } from "@/lib/useAuthRedirect";
-import { API_BASE_URL } from "@/lib/api-config";
 
 function RegisterForm() {
   const router = useRouter();
@@ -33,7 +32,7 @@ function RegisterForm() {
 
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/v1/auth/register`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/auth/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
