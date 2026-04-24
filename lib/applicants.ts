@@ -1,8 +1,10 @@
-import { authFetch } from "./auth";
+import { authFetch, getTokens } from "./auth";
 import { CVUploadResponse, SavedApplicantProfile, ApplicantProfile } from "../types/applicant";
 import { ApiError } from "./apiError";
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { API_BASE_URL } from "./api-config";
+
+const BASE = API_BASE_URL;
 
 export interface ProfileResponse {
   success: boolean;
@@ -15,16 +17,50 @@ export interface ProfileUpdateResponse {
   message: string;
 }
 
-export async function uploadCV(file: File): Promise<CVUploadResponse> {
-  const formData = new FormData();
-  formData.append("cv", file);
+export async function uploadCV(file: File, onProgress?: (percent: number) => void): Promise<CVUploadResponse> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append("cv", file);
 
-  const res = await authFetch(`${BASE}/api/v1/applicants/upload-cv`, {
-    method: "POST",
-    body: formData,
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable && onProgress) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        onProgress(percent);
+      }
+    });
+
+    xhr.onreadystatechange = async () => {
+      if (xhr.readyState === XMLHttpRequest.DONE) {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            resolve(response as CVUploadResponse);
+          } catch (err) {
+            reject(new Error("Failed to parse response"));
+          }
+        } else {
+          try {
+            const error = JSON.parse(xhr.responseText);
+            reject(new Error(error.message || "Upload failed"));
+          } catch (err) {
+            reject(new Error("Upload failed"));
+          }
+        }
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Network error"));
+    xhr.open("POST", `${BASE}/api/v1/applicants/upload-cv`);
+    
+    // Add auth header if token exists
+    const { accessToken } = getTokens();
+    if (accessToken) {
+      xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
+    }
+    
+    xhr.send(formData);
   });
-
-  return await ApiError.handle(res) as CVUploadResponse;
 }
 
 export async function saveProfile(profile: Partial<ApplicantProfile>): Promise<ProfileResponse> {
@@ -48,4 +84,9 @@ export async function patchApplicantProfile(updates: Partial<ApplicantProfile>):
   });
 
   return await ApiError.handle(res) as ProfileUpdateResponse;
+}
+
+export async function getApplicantAnalytics(): Promise<{ success: boolean; data: any }> {
+  const res = await authFetch(`${BASE}/api/v1/applicants/analytics`);
+  return await ApiError.handle(res) as { success: boolean; data: any };
 }

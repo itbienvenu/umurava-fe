@@ -2,7 +2,9 @@ import { authFetch } from "./auth";
 import { ApiError } from "./apiError";
 import { ApplicationResponse, ApplicationsResponse } from "@/types/application";
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { API_BASE_URL } from "./api-config";
+
+const BASE = API_BASE_URL;
 
 export interface ApplicationSubmission {
   coverLetter?: string;

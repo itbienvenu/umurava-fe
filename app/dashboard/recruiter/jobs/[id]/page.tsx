@@ -17,9 +17,13 @@ import {
   Star,
   FloppyDisk,
   Eye,
-  Info
+  Info,
+  Plus,
+  Trash,
+  X
 } from "@phosphor-icons/react";
 import SourcingTab from "./SourcingTab";
+import CandidatesTab from "./CandidatesTab";
 
 interface Skill { name: string; category: string; required: boolean; level: string; weight: number }
 interface Education { level: string; fields: string[] }
@@ -88,6 +92,17 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const [minYears, setMinYears] = useState("");
   const [responsibilities, setResponsibilities] = useState("");
   const [languages, setLanguages] = useState("");
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [weights, setWeights] = useState({
+    skills: 0,
+    experience: 0,
+    education: 0,
+    resources: 0,
+    soft_skills: 0
+  });
+
+  // Local helper for new skill
+  const [newSkillName, setNewSkillName] = useState("");
 
   // Action states
   const [saving, setSaving] = useState(false);
@@ -108,6 +123,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     setMinYears(String(j.requirements?.experience?.min_years ?? ""));
     setResponsibilities((j.responsibilities ?? []).join("\n"));
     setLanguages((j.languages ?? []).join(", "));
+    setSkills(j.skills ?? []);
+    setWeights(j.scoring_config?.weights ?? {
+      skills: 0.4,
+      experience: 0.25,
+      education: 0.15,
+      resources: 0.1,
+      soft_skills: 0.1
+    });
   }
 
   useEffect(() => {
@@ -133,6 +156,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         requirements: { experience: { min_years: Number(minYears) } },
         responsibilities: responsibilities.split("\n").map((r) => r.trim()).filter(Boolean),
         languages: languages.split(",").map((l) => l.trim()).filter(Boolean),
+        skills,
+        scoring_config: { weights },
       };
       const res = await authFetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/jobs/${id}`,
@@ -345,36 +370,113 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             </div>
           </div>
 
-          {/* Skills (read-only) */}
-          {job.skills && job.skills.length > 0 && (
-            <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6">
-              <h2 className="font-semibold text-[#102C26] mb-3">Skills <span className="text-xs font-normal text-[#6b8f85]">(AI extracted)</span></h2>
-              <div className="flex flex-wrap gap-2">
-                {job.skills.map((s) => (
-                  <div key={s.name} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${
-                    s.required ? "bg-[#102C26] text-[#F7E7CE] border-[#102C26]" : "bg-white text-[#102C26] border-[#e8d0b0]"
-                  }`}>
-                    {s.name}<span className="opacity-60">· {Math.round(s.weight * 100)}%</span>
-                  </div>
-                ))}
-              </div>
+          {/* Skills Editor */}
+          <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-[#102C26]">Hard Skills</h2>
+              {!canEdit && <span className="text-xs text-[#6b8f85]">(AI extracted)</span>}
             </div>
-          )}
+            
+            <div className="flex flex-wrap gap-2">
+              {skills.map((s, idx) => (
+                <div key={idx} className={`group flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                  s.required ? "bg-[#102C26] text-[#F7E7CE] border-[#102C26]" : "bg-white text-[#102C26] border-[#e8d0b0]"
+                }`}>
+                  <button 
+                    disabled={!canEdit}
+                    onClick={() => {
+                      const updated = [...skills];
+                      updated[idx].required = !updated[idx].required;
+                      setSkills(updated);
+                    }}
+                    className="hover:opacity-80"
+                  >
+                    {s.name}
+                  </button>
+                  <span className="opacity-60 text-[10px]">
+                    {Math.round(s.weight * 100)}%
+                  </span>
+                  {canEdit && (
+                    <button 
+                      onClick={() => setSkills(skills.filter((_, i) => i !== idx))}
+                      className="text-red-400 hover:text-red-500 ml-1"
+                    >
+                      <X size={12} weight="bold" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
 
-          {/* Scoring weights (read-only) */}
-          {job.scoring_config?.weights && (
-            <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6">
-              <h2 className="font-semibold text-[#102C26] mb-3">Scoring Weights <span className="text-xs font-normal text-[#6b8f85]">(AI configured)</span></h2>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                {Object.entries(job.scoring_config.weights).map(([key, val]) => (
-                  <div key={key} className="flex flex-col items-center bg-[#F7E7CE] rounded-xl p-3">
-                    <span className="text-lg font-bold text-[#102C26]">{Math.round((val as number) * 100)}%</span>
-                    <span className="text-xs text-[#6b8f85] capitalize mt-0.5">{key.replace("_", " ")}</span>
-                  </div>
-                ))}
+            {canEdit && (
+              <div className="flex gap-2 mt-2">
+                <input 
+                  placeholder="Add a skill..." 
+                  value={newSkillName}
+                  onChange={(e) => setNewSkillName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newSkillName.trim()) {
+                      setSkills([...skills, { name: newSkillName.trim(), category: 'general', required: true, level: 'intermediate', weight: 0.1 }]);
+                      setNewSkillName("");
+                    }
+                  }}
+                  className={INPUT_CLASS} 
+                />
+                <button 
+                  onClick={() => {
+                    if (newSkillName.trim()) {
+                      setSkills([...skills, { name: newSkillName.trim(), category: 'general', required: true, level: 'intermediate', weight: 0.1 }]);
+                      setNewSkillName("");
+                    }
+                  }}
+                  className="bg-[#102C26] text-[#F7E7CE] px-4 rounded-xl flex items-center justify-center hover:bg-[#1a4a3a]"
+                >
+                  <Plus size={18} weight="bold" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Scoring Weights Editor */}
+          <div className="bg-white rounded-2xl border border-[#e8d0b0] p-6 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-[#102C26]">Scoring Weights</h2>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-bold ${Math.abs(Object.values(weights).reduce((a, b) => a + b, 0) - 1) < 0.01 ? 'text-green-600' : 'text-red-500'}`}>
+                  Total: {Math.round(Object.values(weights).reduce((a, b) => a + b, 0) * 100)}%
+                </span>
               </div>
             </div>
-          )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+              {Object.entries(weights).map(([key, val]) => (
+                <div key={key} className="flex flex-col gap-2">
+                  <label className="text-[10px] font-bold text-[#6b8f85] uppercase tracking-wider text-center">{key.replace("_", " ")}</label>
+                  <div className="relative">
+                    <input 
+                      type="number"
+                      disabled={!canEdit}
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={Math.round(val * 100)}
+                      onChange={(e) => {
+                        const newVal = Math.min(100, Math.max(0, Number(e.target.value))) / 100;
+                        setWeights(prev => ({ ...prev, [key]: newVal }));
+                      }}
+                      className={INPUT_CLASS + " text-center !py-2 !px-1"}
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold pointer-events-none">%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {canEdit && (
+              <p className="text-[10px] text-[#6b8f85] text-center">
+                Weights determine how candidates are scored. Ideally, they should sum to 100%.
+              </p>
+            )}
+          </div>
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-3">
@@ -426,19 +528,9 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         </div>
       )}
 
-      {activeTab === "Applications" && (
-        <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 flex flex-col items-center justify-center py-16 text-[#6b8f85] text-center">
-          <ClipboardText size={48} weight="duotone" className="mb-4 opacity-30" />
-          <p className="text-sm">No applications yet for this job.</p>
-        </div>
-      )}
+      {activeTab === "Applications" && <CandidatesTab jobId={id} />}
 
-      {activeTab === "Shortlist" && (
-        <div className="bg-white rounded-2xl border border-[#e8d0b0] p-8 flex flex-col items-center justify-center py-16 text-[#6b8f85] text-center">
-          <Star size={48} weight="duotone" className="mb-4 opacity-30" />
-          <p className="text-sm">Run screening first to see the shortlist.</p>
-        </div>
-      )}
+      {activeTab === "Shortlist" && <CandidatesTab jobId={id} filterStatus="shortlisted" />}
 
       {activeTab === "Sourcing" && <SourcingTab jobId={id} />}
     </div>
